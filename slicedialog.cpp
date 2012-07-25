@@ -271,3 +271,18 @@ void SliceDialog::on_confCombo_currentIndexChanged(const QString &arg1)
     ui->fillDensity->setValue((int)(settings.value("fill_density").toDouble()*100));
     ui->layerHeight->setValue(settings.value("layer_height").toDouble());
 }
+
+void SliceDialog::on_mirrorXBtn_clicked()
+{
+    this->stlView->mirrorObject(this->selectedObject, 'x');
+}
+
+void SliceDialog::on_mirrorYBtn_clicked()
+{
+    this->stlView->mirrorObject(this->selectedObject, 'y');
+}
+
+void SliceDialog::on_mirrorZBtn_clicked()
+{
+   this->stlView->mirrorObject(this->selectedObject, 'z');
+}

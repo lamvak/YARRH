@@ -548,3 +548,8 @@ void StlView::removeObject(QString name){
     this->object="";
     updateGL();
 }
+
+void StlView::mirrorObject(QString name, QChar axis){
+    this->objects.value(name)->mirror(axis);
+    updateGL();
+}

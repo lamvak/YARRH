@@ -138,6 +138,8 @@ StlObject::StlObject(QString fileName,int name, QObject *parent) :
             vertexes.replace(i+2,(vertexes.at(i+2)-this->offset)*0.01);
             vertexes.replace(i+3,(vertexes.at(i+3)-this->offset)*0.01);
         }
+        this->height=(zMax-zMin)*0.01;
+
         this->offset.setZ(0);
         this->offset = this->offset*0.01;
     }
@@ -255,6 +257,34 @@ QList<QVector3D> StlObject::transform(){
     }
 
     return out;
+}
+
+void StlObject::mirror(QChar axis){
+    QMatrix4x4 matrix;
+    QList<QVector3D> temp;
+    QVector3D offset;
+    switch(axis.toAscii()){
+    case 'x':
+        offset = QVector3D(0,0,0);
+        matrix.scale(-1.0,1.0,1.0);
+        break;
+    case 'y':
+        offset = QVector3D(0,0,0);
+        matrix.scale(1.0,-1.0,1.0);
+        break;
+    case 'z':
+        offset = QVector3D(0,0,this->height);
+        matrix.scale(1.0,1.0,-1.0);
+        break;
+    }
+    for(int i=0; i<this->vertexes.size(); i+=4){
+        temp.append((this->vertexes.at(i)*matrix));
+        temp.append((this->vertexes.at(i+1)*matrix)+offset);
+        temp.append((this->vertexes.at(i+2)*matrix)+offset);
+        temp.append((this->vertexes.at(i+3)*matrix)+offset);
+    }
+    this->vertexes.clear();
+    this->vertexes=temp;
 }
 
 QList<QVector3D> StlObject::getTriangles(){

@@ -31,6 +31,7 @@ public slots:
     void rotateObject(QString, double);
     void scaleObject(QString, double);
     void moveObject(QString, QPointF);
+    void mirrorObject(QString name, QChar axis);
 protected:
     void initializeGL();
     void paintGL();

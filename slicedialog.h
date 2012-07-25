@@ -45,6 +45,12 @@ private slots:
     void on_exportStlBtn_clicked();
     void on_confCombo_currentIndexChanged(const QString &arg1);
 
+    void on_mirrorXBtn_clicked();
+
+    void on_mirrorYBtn_clicked();
+
+    void on_mirrorZBtn_clicked();
+
 private:
     Ui::SliceDialog *ui;
     QString lastDir;

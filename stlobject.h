@@ -20,6 +20,9 @@ private:
     QVector3D offset;
     bool selected;
     bool colliding;
+    float width;
+    float lenght;
+    float height;
     int name;
     QList<QVector3D> vertexes;
     QVector3D ComputeFaceNormal(QVector3D p1, QVector3D p2, QVector3D p3);
@@ -37,6 +40,7 @@ public:
     QList<QVector3D> getTriangles();
     double getRotation();
     double getScale();
+    void mirror(QChar axis);
 signals:
 
 public slots:
