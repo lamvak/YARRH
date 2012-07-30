@@ -33,7 +33,6 @@ StlView::StlView(QWidget *parent)
     qtGreen = QColor::fromCmykF(0.40, 0.0, 1.0, 0.0);
     qtPurple = QColor::fromCmykF(0.39, 0.39, 0.0, 0.0);
     objectSelected = false;
-    activeTool="move";
     //setting up collison detection
 //    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
 //    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
@@ -61,7 +60,6 @@ QSize StlView::sizeHint() const
 void StlView::mousePressEvent(QMouseEvent *event)
 {
     GLint viewport[4];
-    GLubyte pixel[3];
     lastPos = event->pos();
     lastPosWorld = screenToWorld(lastPos.x(),lastPos.y());
     glGetIntegerv(GL_VIEWPORT,viewport);
@@ -138,7 +136,6 @@ void StlView::mouseMoveEvent(QMouseEvent *event)
             emit selectedScale((int)(this->objects.value(this->object)->getScale()*100));
         }
         if(event->buttons() & Qt::MiddleButton){
-            qDebug() << start.angleTo(current);
             this->objects.value(this->object)->rotate(this->objects.value(this->object)->getRotation()-start.angleTo(current));
             emit selectedRotation(((((int)this->objects.value(this->object)->getRotation()/5)*5)%360)*-1);
         }
@@ -169,7 +166,6 @@ void StlView::mouseMoveEvent(QMouseEvent *event)
                upX=eyeXtemp-eyeX;
                upY=eyeYtemp-eyeY;
                upZ=eyeZtemp-eyeZ;
-               qDebug() << upX << upY << upZ << eyeX << eyeY << eyeZ;
                updateGL();
 
         } else if (event->buttons() & Qt::RightButton){
@@ -227,8 +223,9 @@ void StlView::moveObject(QString name , QPointF point){
 void StlView::initializeGL()
 {
     qglClearColor(QColor(78,78,127));
+//    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_CULL_FACE); //culling of so that bad normals are displayed
+ //   glEnable(GL_CULL_FACE); //culling off so that bad normals are displayed
     glShadeModel(GL_SMOOTH);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -300,20 +297,19 @@ QPointF StlView::screenToWorld(int x, int y){
 
      GLfloat fCurrentColor[4];
      glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
-         glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
-         glBegin(GL_QUADS);
-         glVertex3f(-20.0f, 20.0f, 0.00f);
-         glVertex3f( 20.0f, 20.0f, 0.00f);
-         glVertex3f( 20.0f,-20.0f, 0.00f);
-         glVertex3f(-20.0f,-20.0f, 0.00f);
-         glEnd();
+     glColor4f(0.5f, 0.5f, 0.5f, 0.0f);
+     glBegin(GL_QUADS);
+     glVertex3f(-20.0f,-20.0f, 0.00f);
+     glVertex3f( 20.0f,-20.0f, 0.00f);
+     glVertex3f( 20.0f, 20.0f, 0.00f);
+     glVertex3f(-20.0f, 20.0f, 0.00f);
+     glEnd();
      glColor4fv(fCurrentColor);
 
 
      winX = (float)x;
      winY = (float)viewport[3] - (float)y;
      glReadPixels( x, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
-     qDebug() << winX << winY << winZ;
      gluUnProject( winX, winY,  winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
    return QPointF(posX,posY);
@@ -321,7 +317,6 @@ QPointF StlView::screenToWorld(int x, int y){
 
 //drawing 20x20cm grind in 3dview
 void StlView::drawGrid(){
-    GLdouble gridWidth=2.0;
     GLint     iSlices=32;
     GLint     iStacks=32;
     GLdouble  lineRadius=0.001;
@@ -500,7 +495,11 @@ void StlView::drawAxis()
 
 QString StlView::addObject(QString fileName){
     QString name=QColor(qrand()%256,qrand()%256,qrand()%256).name();
-    this->objects.insert(name,new StlObject(fileName,this->objects.size()+1));
+    StlObject *newObject= new StlObject();
+    connect(newObject, SIGNAL(progress(int,int,QString)), this, SIGNAL(progress(int,int,QString)));
+    connect(newObject, SIGNAL(doneProcessing(bool)), this, SIGNAL(doneProcessing(bool)));
+    newObject->loadFile(fileName);
+    this->objects.insert(name, newObject);
 //    btTriangleMesh* data = new btTriangleMesh();
 //    QList<QVector3D> verteces = this->objects.values().last()->getTriangles();
 //    qDebug() << verteces.size();
@@ -520,13 +519,11 @@ QString StlView::addObject(QString fileName){
 //        data->addTriangle(A,B,C,false);
 //    }
 //    btBvhTriangleMeshShape* shape=new btBvhTriangleMeshShape(data,true,true);
+    if(this->objects.value(name)->getIsManifold()){
+        emit nonManifold(name);
+    }
     updateGL();
     return name;
-}
-
-
-void StlView::setActiveTool(QString tool){
-    this->activeTool=tool;
 }
 
 void StlView::setTableSize(int x, int y){
@@ -551,5 +548,16 @@ void StlView::removeObject(QString name){
 
 void StlView::mirrorObject(QString name, QChar axis){
     this->objects.value(name)->mirror(axis);
+    updateGL();
+}
+
+
+void StlView::repeairObjectNormals(QString name){
+    this->objects.value(name)->repairNormals();
+    updateGL();
+}
+
+void StlView::repeairObjectHoles(QString name){
+    this->objects.value(name)->repairHoles();
     updateGL();
 }
