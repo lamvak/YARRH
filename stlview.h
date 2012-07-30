@@ -16,7 +16,6 @@ public:
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
     QString addObject(QString fileName);
-    void setActiveTool(QString tool);
     void setTableSize(int x, int y);
 signals:
     void objectPicked(bool);
@@ -24,8 +23,13 @@ signals:
     void selectedScale(int);
     void selectedCors(QPointF);
     void selectedCol(QString);
+    void nonManifold(QString);
+    void progress(int value, int max, QString text);
+    void doneProcessing(bool);
 public slots:
     void selectObject(QString);
+    void repeairObjectNormals(QString);
+    void repeairObjectHoles(QString);
     StlObject* getObject(QString);
     void removeObject(QString);
     void rotateObject(QString, double);
@@ -51,7 +55,6 @@ private:
     bool objectSelected;
     QString object;
     QColor objectColor;
-    QString activeTool;
     float xMove;
     float yMove;
     float zoom;

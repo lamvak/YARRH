@@ -14,14 +14,10 @@ GCodeObject::~GCodeObject()
  }
 
 void GCodeObject::draw(float scale, int layers, bool show_travel, int current_layer){
-    int resolution=1;
     int i;
     for(i=0; i<=layers-1; i++){
         layerList.at(i)->display(scale,i==layers-1, show_travel, current_layer);
     }
-   //renderCylinder(0,0,1,1,1,1,1,0,false,0);
-    //draw final layer
-
 }
 
 

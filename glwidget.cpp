@@ -166,7 +166,6 @@ void GlWidget::setCurrentLayer(int layer){
 
   //drawing 20x20cm grind in 3dview
   void GlWidget::drawGrid(){
-      GLdouble gridWidth=2.0;
       GLint     iSlices=32;
       GLint     iStacks=32;
       GLdouble  lineRadius=0.001;
