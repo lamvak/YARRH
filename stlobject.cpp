@@ -1,13 +1,31 @@
 #include "stlobject.h"
 
-StlObject::StlObject(QString fileName,int name, QObject *parent) :
+//stl object
+StlObject::StlObject(QObject *parent) :
+QObject(parent)
+{
+    this->scaleValue=1.0;
+    this->rotation=0.0;
+    this->selected=false;
+    this->colliding=false;
+    this->nonManifold=false;
+}
+
+StlObject::StlObject(QString fileName, QObject *parent) :
     QObject(parent)
 {
     this->scaleValue=1.0;
     this->rotation=0.0;
-    this->name=name;
     this->selected=false;
     this->colliding=false;
+    this->nonManifold=false;
+    this->loadFile(fileName);
+}
+
+void StlObject::loadFile(QString fileName){
+    QTime myTimer;
+    bool badNormals;
+    myTimer.start();
     this->fileName=fileName;
     QFile* file = new QFile(fileName);
     if(file->open(QIODevice::ReadOnly)){
@@ -15,12 +33,23 @@ StlObject::StlObject(QString fileName,int name, QObject *parent) :
         float yMax=0,yMin=0;
         float zMax=0,zMin=0;
         int triang_count = 0;
+
+        Vertex *v1;
+        Vertex *v2;
+        Vertex *v3;
+        HalfEdge *e1;
+        HalfEdge *e2;
+        HalfEdge *e3;
+        Face *face;
         float nx, ny, nz, x1, x2, x3, y1, y2, y3, z1, z2, z3;
         QString line;
-        //if ascii file
-        if(file->readLine().contains("solid")){
+        line=file->readLine();
+        line.remove("\r");
+        //ascii file
+        if(line.contains("solid")){
             while(!file->atEnd()){
                 line=file->readLine();
+                line.remove("\r");
                 if(line.contains("endsolid")){
                     break;
                 }
@@ -28,21 +57,26 @@ StlObject::StlObject(QString fileName,int name, QObject *parent) :
                 ny=line.split(" ", QString::SkipEmptyParts).at(3).toFloat();
                 nz=line.split(" ", QString::SkipEmptyParts).at(4).toFloat();
                 line=file->readLine();
+                line.remove("\r");
                 line=file->readLine();
+                line.remove("\r");
                 x1=line.split(" ",QString::SkipEmptyParts).at(1).toFloat();
                 y1=line.split(" ",QString::SkipEmptyParts).at(2).toFloat();
                 z1=line.split(" ",QString::SkipEmptyParts).at(3).toFloat();
                 line=file->readLine();
+                line.remove("\r");
                 x2=line.split(" ",QString::SkipEmptyParts).at(1).toFloat();
                 y2=line.split(" ",QString::SkipEmptyParts).at(2).toFloat();
                 z2=line.split(" ",QString::SkipEmptyParts).at(3).toFloat();
                 line=file->readLine();
+                line.remove("\r");
                 x3=line.split(" ",QString::SkipEmptyParts).at(1).toFloat();
                 y3=line.split(" ",QString::SkipEmptyParts).at(2).toFloat();
                 z3=line.split(" ",QString::SkipEmptyParts).at(3).toFloat();
                 line=file->readLine();
+                line.remove("\r");
                 line=file->readLine();
-
+                line.remove("\r");
                 if(triang_count==0){
                     xMax=x1;
                     yMax=y1;
@@ -59,11 +93,22 @@ StlObject::StlObject(QString fileName,int name, QObject *parent) :
                 yMin=qMin(qMin(yMin,y1),qMin(y3,y2));
                 zMin=qMin(qMin(zMin,z1),qMin(z3,z2));
 
-                this->vertexes.append(ComputeFaceNormal(QVector3D(x1,y1,z1),QVector3D(x2,y2,z2),QVector3D(x3,y3,z3)));
-                this->vertexes.append(QVector3D(x1,y1,z1));
-                this->vertexes.append(QVector3D(x2,y2,z2));
-                this->vertexes.append(QVector3D(x3,y3,z3));
+                v1=addVertex(x1,y1,z1);
+                v2=addVertex(x2,y2,z2);
+                v3=addVertex(x3,y3,z3);
+
+                e1=addHalfEdge(v1,v2);
+                e2=addHalfEdge(v2,v3);
+                e3=addHalfEdge(v3,v1);
+
+                //inserting face to list
+                face=addFace(e1,e2,e3);
+                e1->addFace(face);
+                e2->addFace(face);
+                e3->addFace(face);
+
                 triang_count++;
+                emit progress(file->pos(),file->size(), "Loading and analizing STL");
             }
         }
         //if binary
@@ -71,10 +116,11 @@ StlObject::StlObject(QString fileName,int name, QObject *parent) :
             QDataStream in(file);
             in.setByteOrder(QDataStream::LittleEndian);
             in.setFloatingPointPrecision(QDataStream::SinglePrecision);
-            quint32 ntriangles;
+            qint32 ntriangles;
             quint16 control_bytes;
             file->seek(80);
             in >> ntriangles;
+            this->faces.reserve(ntriangles);
             while (triang_count < ntriangles) {
                 file->seek(84+triang_count*50+0+0);
                 in >> nx;
@@ -122,31 +168,128 @@ StlObject::StlObject(QString fileName,int name, QObject *parent) :
                 yMin=qMin(qMin(yMin,y1),qMin(y3,y2));
                 zMin=qMin(qMin(zMin,z1),qMin(z3,z2));
 
-                this->vertexes.append(ComputeFaceNormal(QVector3D(x1,y1,z1),QVector3D(x2,y2,z2),QVector3D(x3,y3,z3)));
-                this->vertexes.append(QVector3D(x1,y1,z1));
-                this->vertexes.append(QVector3D(x2,y2,z2));
-                this->vertexes.append(QVector3D(x3,y3,z3));
+                v1=addVertex(x1,y1,z1);
+                v2=addVertex(x2,y2,z2);
+                v3=addVertex(x3,y3,z3);
+
+                e1=addHalfEdge(v1,v2);
+                e2=addHalfEdge(v2,v3);
+                e3=addHalfEdge(v3,v1);
+                //inserting face to list
+                face=addFace(e1,e2,e3);
+                e1->addFace(face);
+                e2->addFace(face);
+                e3->addFace(face);
+
                 triang_count++;
+                emit progress(file->pos(),file->size(), "Loading and analizing STL");
+            }
+        }
+        //set center and offset
+        qDebug() << this->offset;
+        QHash<QString, Vertex*>::iterator i;
+        this->offset=Vertex((xMax+xMin)/2,(yMax+yMin)/2,zMin);
+
+        for(i = this->vertexes.begin(); i != this->vertexes.end(); ++i){
+            i.value()->setX((i.value()->x()-this->offset.x())*0.01);
+            i.value()->setY((i.value()->y()-this->offset.y())*0.01);
+            i.value()->setZ((i.value()->z()-this->offset.z())*0.01);
+        }
+        this->height=(zMax-zMin)*0.01;
+        this->offset.setZ(0);
+        this->offset = this->offset*0.01;
+        qDebug() << "ilosc lini:" << this->edges.size();
+        qDebug() << "ilosc verteksow:" << this->vertexes.size();
+        qDebug() << "ilosc facy:" << this->faces.size();
+        qDebug() << "ilosc zlych edgy: " << this->badEdges.size();
+
+        //check all edges to find non manifold ones, and nad normals
+        QMap<QString,HalfEdge*>::iterator j;
+        for (j = this->edges.begin(); j != this->edges.end(); ++j){
+            if(j.value()->getFaces().size()==0 && j.value()->getTwin()->getFaces().size()==1){
+                this->badEdges.append(j.value()->getTwin()->getHash());
+            }
+            if(j.value()->getFaces().size()==2 && j.value()->getTwin()->getFaces().size()==0){
+                badNormals=true;
             }
         }
 
-        //set center and offset
-        this->offset=QVector3D((xMax+xMin)/2,(yMax+yMin)/2,zMin);
-        qDebug() << this->offset;
-        for(int i=0; i<vertexes.size(); i+=4){
-            vertexes.replace(i+1,(vertexes.at(i+1)-this->offset)*0.01);
-            vertexes.replace(i+2,(vertexes.at(i+2)-this->offset)*0.01);
-            vertexes.replace(i+3,(vertexes.at(i+3)-this->offset)*0.01);
+        if(this->badEdges.size()>0){
+            this->nonManifold=true;
         }
-        this->height=(zMax-zMin)*0.01;
-
-        this->offset.setZ(0);
-        this->offset = this->offset*0.01;
     }
     else{
         qDebug() << "Error" << file->errorString();
     }
     delete file;
+    emit doneProcessing(true);
+
+    //if there are bad normals then recaculate them
+    if(badNormals){
+        repairNormals();
+    }
+    qDebug() << "loading took: " <<myTimer.elapsed();
+}
+
+//adding verteces without adding doubles
+Vertex* StlObject::addVertex(float x, float y, float z){
+    Vertex* out;
+    //merging close vetreces so stiching algorythm have less work
+    float threshold=0.005;
+    float roundedX=(int)(x/threshold)*threshold;
+    float roundedY=(int)(y/threshold)*threshold;
+    float roundedZ=(int)(z/threshold)*threshold;
+    QString hash=QString::number(roundedX)+QString::number(roundedY)+QString::number(roundedZ);
+    //adding verteces without adding doubles
+    if(this->vertexes.contains(hash)){
+       out=this->vertexes.value(hash);
+    }
+    else{
+        out=new Vertex();
+        out->setX(x);
+        out->setY(y);
+        out->setZ(z);
+        this->vertexes.insert(hash,out);
+    }
+    return out;
+}
+//adding edges
+HalfEdge* StlObject::addHalfEdge(Vertex *v1, Vertex *v2){
+    HalfEdge* out;
+    QString hash=QString::number((int)v1)+QString::number((int)v2);
+
+    if(!this->edges.contains(hash)){
+        out=new HalfEdge(v1,v2);
+        this->edges.insert(hash,out);
+        out->setTwin(addHalfEdge(v2,v1));
+    }
+    else{
+        out=this->edges.value(hash);
+    }
+
+    return out;
+}
+
+//adding face
+Face* StlObject::addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3){
+    QString hash;
+    QList<int> edges;
+    edges.append((int)edge1);
+    edges.append((int)edge2);
+    edges.append((int)edge3);
+    //sort edges so all faces using these have same hash
+    qSort(edges);
+    hash.append(QString::number(edges.at(0))+QString::number(edges.at(1))+QString::number(edges.at(2)));
+    Face* out;
+
+    if(this->faces.contains(hash)){
+        return this->faces.value(hash);
+    }
+    else{
+        out = new Face(edge1,edge2,edge3);
+        this->faces.insert(hash,out);
+        return out;
+    }
 }
 
 void StlObject::select(bool value){
@@ -184,7 +327,12 @@ void StlObject::draw(bool picking){
     GLfloat   gray[4]={0.9,0.9,0.9,1.0};
     GLfloat   white[4]={0.9,1.0,0.8,1.0};
     GLfloat   red[4]={1.0,0.8,0.8,1.0};
-    GLfloat fCurrentColor[4];
+    GLfloat   green[4]={0.8,1.0,0.8,1.0};
+    GLfloat   reder[4]={1.0,0.0,0.0,1.0};
+    GLfloat   fCurrentColor[4];
+    GLfloat   lastColor[4];
+    //iterator
+    QHash<QString, Face*>::iterator i;
     // Get the current color
     glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
     if(!picking){
@@ -202,91 +350,183 @@ void StlObject::draw(bool picking){
     glTranslatef(0.0+this->offset.x(), 0.0+this->offset.y(), 0.0);
     glRotatef(((int)this->rotation/5)*5, 0.0, 0.0, 1.0);
     glBegin(GL_TRIANGLES);
-    for(int i=0; i<vertexes.size(); i+=4){
-        glNormal3f(vertexes.at(i).x(), vertexes.at(i).y(), vertexes.at(i).z());
-        glVertex3f(vertexes.at(i+1).x()*this->scaleValue, vertexes.at(i+1).y()*this->scaleValue, vertexes.at(i+1).z()*this->scaleValue);
-        glVertex3f(vertexes.at(i+2).x()*this->scaleValue, vertexes.at(i+2).y()*this->scaleValue, vertexes.at(i+2).z()*this->scaleValue);
-        glVertex3f(vertexes.at(i+3).x()*this->scaleValue, vertexes.at(i+3).y()*this->scaleValue, vertexes.at(i+3).z()*this->scaleValue);
+    for(i = this->faces.begin(); i != this->faces.end(); ++i){
+        glNormal3f(i.value()->getNormal()->x(),i.value()->getNormal()->y(),i.value()->getNormal()->z());
+        glVertex3f(i.value()->getEdge1()->getStart()->x()*this->scaleValue, i.value()->getEdge1()->getStart()->y()*this->scaleValue, i.value()->getEdge1()->getStart()->z()*this->scaleValue);
+        glVertex3f(i.value()->getEdge2()->getStart()->x()*this->scaleValue, i.value()->getEdge2()->getStart()->y()*this->scaleValue, i.value()->getEdge2()->getStart()->z()*this->scaleValue);
+        glVertex3f(i.value()->getEdge3()->getStart()->x()*this->scaleValue, i.value()->getEdge3()->getStart()->y()*this->scaleValue, i.value()->getEdge3()->getStart()->z()*this->scaleValue);
     }
     glEnd( );
+
+    if(!picking){
+        //draw bad edges
+        glDisable(GL_LIGHTING);
+        glColor4fv(reder);
+        glLineWidth(2.0);
+        glDepthMask(false);
+        glBegin(GL_LINES);
+        for(int i=0; i<this->badEdges.size(); i++){
+            glVertex3f(this->edges.value(this->badEdges.at(i))->getStart()->x()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStart()->y()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStart()->z()*this->scaleValue);
+            glVertex3f(this->edges.value(this->badEdges.at(i))->getStop()->x()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStop()->y()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStop()->z()*this->scaleValue);
+        }
+        glEnd( );
+        glDepthMask(true);
+        glEnable(GL_LIGHTING);
+    }
     glPopMatrix();
     // Restore the current color
     glColor4fv(fCurrentColor);
 }
 
 
-// Offset pIn by pOffset into pOut
-QVector3D StlObject::VectorOffset(QVector3D pIn, QVector3D pOffset)
-{
-    QVector3D out;
-    out.setX(pIn.x() - pOffset.x());
-    out.setY(pIn.y() - pOffset.y());
-    out.setZ(pIn.z() - pOffset.z());
-    return out;
-}
-// Compute the cross product a X b into pOut
-QVector3D StlObject::VectorGetNormal(QVector3D a, QVector3D b)
-{
-    QVector3D out;
-    out.setX(a.y() * b.z() - a.z() * b.y());
-    out.setY(a.z() * b.x() - a.x() * b.z());
-    out.setZ(a.x() * b.y() - a.y() * b.x());
-    return out;
-}
 
-// Compute p1,p2,p3 face normal into pOut
-QVector3D StlObject::ComputeFaceNormal(QVector3D p1, QVector3D p2, QVector3D p3)
-{
-    // Uses p2 as a new origin for p1,p3
-    QVector3D a=VectorOffset(p3,p2);
-    QVector3D b=VectorOffset(p1,p2);
-    // Compute the cross product a X b to get the face normal
-    QVector3D pn=VectorGetNormal(a, b);
-    // Return a normalized vector
-    return pn.normalized();
-}
-
-
-QList<QVector3D> StlObject::transform(){
-    QList<QVector3D> out;
-    QMatrix4x4 matrix;
-    matrix.rotate(360-((((int)this->rotation/5)*5)%360),0.0f,0.0f,1.0f);
-   // matrix.translate(this->offset);
-    for(int i=0; i<this->vertexes.size(); i++){
-        out.append((((this->vertexes.at(i))*matrix)*(100*this->scaleValue))+this->offset*100);
-    }
-
-    return out;
-}
 
 void StlObject::mirror(QChar axis){
     QMatrix4x4 matrix;
-    QList<QVector3D> temp;
-    QVector3D offset;
+    Vertex offset;
     switch(axis.toAscii()){
     case 'x':
-        offset = QVector3D(0,0,0);
+        offset = Vertex(0,0,0);
         matrix.scale(-1.0,1.0,1.0);
         break;
     case 'y':
-        offset = QVector3D(0,0,0);
+        offset = Vertex(0,0,0);
         matrix.scale(1.0,-1.0,1.0);
         break;
     case 'z':
-        offset = QVector3D(0,0,this->height);
+        offset = Vertex(0,0,this->height);
         matrix.scale(1.0,1.0,-1.0);
         break;
     }
-    for(int i=0; i<this->vertexes.size(); i+=4){
-        temp.append((this->vertexes.at(i)*matrix));
-        temp.append((this->vertexes.at(i+1)*matrix)+offset);
-        temp.append((this->vertexes.at(i+2)*matrix)+offset);
-        temp.append((this->vertexes.at(i+3)*matrix)+offset);
+    //zamien rotacje vertexow robiaz zamiane v2 i v3 powinno dzialac
+    //transform verteces
+    QHash<QString, Vertex*>::iterator i;
+    for(i = this->vertexes.begin(); i != this->vertexes.end(); ++i){
+        *i.value()=((*i.value()*matrix)+offset);
     }
-    this->vertexes.clear();
-    this->vertexes=temp;
+    QHash<QString, Face*>::iterator j;
+    for(j = this->faces.begin(); j != this->faces.end(); ++j){
+       j.value()->flip();
+    }
 }
 
 QList<QVector3D> StlObject::getTriangles(){
-    return this->vertexes;
+    QList<QVector3D> out;
+    QMatrix4x4 matrix;
+    matrix.rotate(360-((((int)this->rotation/5)*5)%360),0.0f,0.0f,1.0f);
+    QHash<QString, Face*>::iterator j;
+    for(j = this->faces.begin(); j != this->faces.end(); ++j){
+        out.append((((*j.value()->getNormal())*matrix)));
+        out.append((((*j.value()->getEdge1()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100);
+        out.append((((*j.value()->getEdge2()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100);
+        out.append((((*j.value()->getEdge3()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100);
+    }
+    return out;
+}
+
+void StlObject::repairNormals(){
+    QList<Face*> tempList;
+    QList<Face*> facesToCheck;
+    QList<Face*> unOrientedFaces;
+    double minimalDist=500;
+    Face *currentFace;
+    Face *startFace;
+    unOrientedFaces=this->faces.values();
+    int maximum=unOrientedFaces.size();
+    qDebug() << unOrientedFaces.size();
+    QHash<QString, Face*>::iterator j;
+    for(j = this->faces.begin(); j != this->faces.end(); ++j){
+        j.value()->setNormalIsGood(false);
+    }
+
+    while(unOrientedFaces.size()>0){
+        minimalDist=500;
+        //finding closes face to some plane to find out if normal vector is pointing the right way
+        for(int i=0; i<unOrientedFaces.size(); i++){
+            if(unOrientedFaces.at(i)->getCenter().distanceToPlane(QVector3D(0,0,-100),QVector3D(0,0,1))<minimalDist){
+                minimalDist=unOrientedFaces.at(i)->getCenter().distanceToPlane(QVector3D(0,0,-100),QVector3D(0,0,1));
+                startFace=unOrientedFaces.at(i);
+            }
+        }
+        //checking if normals are pointing outside
+        if(((acos(QVector3D::dotProduct(startFace->getNormal()->normalized(),QVector3D(0,0,-100).normalized()))*(double)180)/3.14159)>91){
+            startFace->flip();
+        }
+        startFace->setNormalIsGood(true);
+        facesToCheck.append(startFace);
+        //check all edges of face
+        //check edge1
+        //if its ok
+        while(facesToCheck.size()>0){
+            currentFace=facesToCheck.takeFirst();
+            unOrientedFaces.removeAt(unOrientedFaces.indexOf(currentFace));
+            if(currentFace->getEdge1()->getFaces().size()==1 && currentFace->getEdge1()->getTwin()->getFaces().size()==1){
+                //did we check neighbor?
+                if(!currentFace->getEdge1()->getTwin()->getFaces().at(0)->isNormalGood()){
+                    currentFace->getEdge1()->getTwin()->getFaces().at(0)->setNormalIsGood(true);
+                    //if not then set its ok and check it neighbors
+                    facesToCheck.append(currentFace->getEdge1()->getTwin()->getFaces().at(0));
+                }
+            }
+            //if half edge is used twice
+            if(currentFace->getEdge1()->getFaces().size()==2 && currentFace->getEdge1()->getTwin()->getFaces().size()==0){
+                //get faces od this half edge
+                tempList = currentFace->getEdge1()->getFaces();
+                //remove from list current edge
+                tempList.removeAt(tempList.indexOf(currentFace));
+                if(!tempList.at(0)->isNormalGood()){
+                    tempList.at(0)->flip();
+                    tempList.at(0)->setNormalIsGood(true);
+                    facesToCheck.append(tempList.at(0));
+                }
+            }
+            if(currentFace->getEdge2()->getFaces().size()==1 && currentFace->getEdge2()->getTwin()->getFaces().size()==1){
+                if(!currentFace->getEdge2()->getTwin()->getFaces().at(0)->isNormalGood()){
+                    currentFace->getEdge2()->getTwin()->getFaces().at(0)->setNormalIsGood(true);
+                    facesToCheck.append(currentFace->getEdge2()->getTwin()->getFaces().at(0));
+                }
+            }
+            if(currentFace->getEdge2()->getFaces().size()==2 && currentFace->getEdge2()->getTwin()->getFaces().size()==0){
+                tempList = currentFace->getEdge2()->getFaces();
+                tempList.removeAt(tempList.indexOf(currentFace));
+                if(!tempList.at(0)->isNormalGood()){
+                    tempList.at(0)->flip();
+                    tempList.at(0)->setNormalIsGood(true);
+                    facesToCheck.append(tempList.at(0));
+                }
+            }
+            if(currentFace->getEdge3()->getFaces().size()==1 && currentFace->getEdge3()->getTwin()->getFaces().size()==1){
+                if(!currentFace->getEdge3()->getTwin()->getFaces().at(0)->isNormalGood()){
+                    currentFace->getEdge3()->getTwin()->getFaces().at(0)->setNormalIsGood(true);
+                    facesToCheck.append(currentFace->getEdge3()->getTwin()->getFaces().at(0));
+                }
+            }
+            if(currentFace->getEdge3()->getFaces().size()==2 && currentFace->getEdge3()->getTwin()->getFaces().size()==0){
+                tempList = currentFace->getEdge3()->getFaces();
+                tempList.removeAt(tempList.indexOf(currentFace));
+                if(!tempList.at(0)->isNormalGood()){
+                    tempList.at(0)->flip();
+                    tempList.at(0)->setNormalIsGood(true);
+                    facesToCheck.append(tempList.at(0));
+                }
+            }
+            emit progress(maximum-unOrientedFaces.size(),maximum, tr("Calculating normal vectors"));
+        }
+    }
+    emit doneProcessing(true);
+}
+
+void StlObject::repairHoles(){
+    this->badEdges.clear();
+    QMap<QString,HalfEdge*>::iterator i;
+    for (i = this->edges.begin(); i != this->edges.end(); ++i){
+        //if half edge is non manifold
+        if(i.value()->getFaces().size()==0 && i.value()->getTwin()->getFaces().size()==1){
+            this->badEdges.append(i.value()->getTwin()->getHash());
+        }
+    }
+//
+
+//    qDebug() << this->startFace->getEdge2()->getFaces().size();
+//    qDebug() << this->startFace->getEdge3()->getFaces().size();
 }
