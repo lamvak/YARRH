@@ -13,6 +13,8 @@ SliceDialog::SliceDialog(QWidget *parent) :
     connect(this->stlView, SIGNAL(objectPicked(bool)), ui->removeBtn, SLOT(setEnabled(bool)));
     connect(this->stlView, SIGNAL(selectedRotation(int)), this, SLOT(objectRotated(int)));
     connect(this->stlView, SIGNAL(selectedScale(int)), this, SLOT(objectScaled(int)));
+    connect(this->stlView, SIGNAL(progress(int,int,QString)), this, SLOT(updateProgress(int,int,QString)));
+    connect(this->stlView, SIGNAL(doneProcessing(bool)),ui->progressBar,SLOT(setHidden(bool)));
 
     connect(this->stlView, SIGNAL(selectedCors(QPointF)), this, SLOT(setOffset(QPointF)));
     connect(this->stlView, SIGNAL(selectedCol(QString)), this, SLOT(setSelectcedObject(QString)));
@@ -22,9 +24,11 @@ SliceDialog::SliceDialog(QWidget *parent) :
     connect(ui->xSpinBox, SIGNAL(valueChanged(double)), this, SLOT(moveObjectX(double)));
     connect(ui->ySpinBox, SIGNAL(valueChanged(double)), this, SLOT(moveObjectY(double)));
     connect(ui->objectList, SIGNAL(currentRowChanged(int)), this, SLOT(listItemSelected(int)));
+    connect(this->stlView, SIGNAL(nonManifold(QString)), this, SLOT(nonManifold(QString)));
     ui->consoleGroup->hide();
     ui->objectOptionGroup->setEnabled(false);
     ui->removeBtn->setEnabled(false);
+    ui->progressBar->hide();
 
     QMovie *movie = new QMovie(":/imgs/loader.gif");
     ui->loaderLabel->setMovie(movie);
@@ -89,6 +93,14 @@ void SliceDialog::setSelectcedObject(QString name){
     ui->objectList->blockSignals(false);
 }
 
+void SliceDialog::nonManifold(QString name){
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setText(tr("STL isnt manifold!"));
+    msgBox.exec();
+
+}
+
 SliceDialog::~SliceDialog()
 {
     delete ui;
@@ -116,8 +128,8 @@ void SliceDialog::clearObjects(){
 }
 
 void SliceDialog::addObject(QString file){
-    ui->objectList->addItem(file.right(file.length()-file.lastIndexOf("/")-1));
     this->itemColors.append(this->stlView->addObject(file));
+    ui->objectList->addItem(file.right(file.length()-file.lastIndexOf("/")-1));
 }
 
 void SliceDialog::on_addBtn_clicked()
@@ -205,7 +217,7 @@ QString SliceDialog::saveStl(QString fileName)
 
     QList<QVector3D> data;
     for(int i=0; i<this->itemColors.size(); i++){
-        data.append(this->stlView->getObject(this->itemColors.at(i))->transform());
+        data.append(this->stlView->getObject(this->itemColors.at(i))->getTriangles());
     }
     int trianglesSize=data.size()/4;
     QProgressDialog progress(tr("Saving stl"), 0, 0, 0, this);
@@ -285,4 +297,25 @@ void SliceDialog::on_mirrorYBtn_clicked()
 void SliceDialog::on_mirrorZBtn_clicked()
 {
    this->stlView->mirrorObject(this->selectedObject, 'z');
+}
+
+void SliceDialog::on_repeairNormals_clicked()
+{
+     this->stlView->repeairObjectNormals(this->selectedObject);
+}
+
+void SliceDialog::updateProgress(int value, int max, QString text){
+    if(ui->progressBar->isHidden()){
+        ui->progressBar->show();
+    }
+
+    ui->progressBar->setMaximum(max);
+    ui->progressBar->setValue(value);
+    ui->progressBar->setFormat(text);
+    qApp->processEvents();
+}
+
+void SliceDialog::on_repairHoles_clicked()
+{
+   this->stlView->repeairObjectHoles(this->selectedObject);
 }

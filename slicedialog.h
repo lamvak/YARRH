@@ -26,7 +26,7 @@ public slots:
     void addObject(QString file="");
     void updateConfigs(QString dir);
     void updateSlicerPath(QString path);
-    void updateOutputPath(QString path);
+    void updateOutputPath(QString path);   
 private slots:
     void on_addBtn_clicked();
     void on_sliceBtn_clicked();
@@ -41,6 +41,8 @@ private slots:
     void moveObjectX(double);
     void moveObjectY(double);
     void listItemSelected(int);
+
+    void nonManifold(QString name);
     void on_removeBtn_clicked();
     void on_exportStlBtn_clicked();
     void on_confCombo_currentIndexChanged(const QString &arg1);
@@ -50,6 +52,11 @@ private slots:
     void on_mirrorYBtn_clicked();
 
     void on_mirrorZBtn_clicked();
+
+    void on_repeairNormals_clicked();
+
+    void updateProgress(int value, int max, QString text);
+    void on_repairHoles_clicked();
 
 private:
     Ui::SliceDialog *ui;
