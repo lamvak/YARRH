@@ -26,7 +26,10 @@ SOURCES += main.cpp\
     optiondialog.cpp \
     slicedialog.cpp \
     stlview.cpp \
-    stlobject.cpp
+    stlobject.cpp \
+    face.cpp \
+    halfedge.cpp \
+    vertex.cpp
 
 HEADERS  += mainwindow.h \
     glwidget.h \
@@ -42,7 +45,10 @@ HEADERS  += mainwindow.h \
     optiondialog.h \
     slicedialog.h \
     stlview.h \
-    stlobject.h
+    stlobject.h \
+    face.h \
+    halfedge.h \
+    vertex.h
 
 FORMS    += mainwindow.ui \
     aboutwindow.ui \
@@ -64,7 +70,7 @@ include(qextserialport/qextserialport.pri)
 include(bullet/bullet.pri)
 
 win32 {
-LIBS+=-lglut32
+#LIBS+=-lglut32
 }
 
 unix {
@@ -75,6 +81,12 @@ OBJECTS_DIR = build
 MOC_DIR = build
 UI_DIR = build
 RCC_DIR = build
+
+
+
+
+
+
 
 
 

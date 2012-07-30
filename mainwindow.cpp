@@ -177,12 +177,12 @@ void MainWindow::loadFile(QString fileName){
         this->sliceDialog->setLastDir(this->lastOpendDir);
     }
     // if its stl then open slice window
-    if(fileName.endsWith(".stl")){
-        this->sliceDialog->clearObjects();
-        this->sliceDialog->addObject(fileName);
+    if(fileName.endsWith(".stl",Qt::CaseInsensitive)){
         this->sliceDialog->updateConfigs(this->optionDialog->getConfigDir());
         this->sliceDialog->move(QPoint(this->geometry().center().x()-this->sliceDialog->width()/2,this->geometry().center().y()-this->sliceDialog->height()/2));
         this->sliceDialog->show();
+        this->sliceDialog->clearObjects();
+        this->sliceDialog->addObject(fileName);
     }
     //else just load gcode
     else{
