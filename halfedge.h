@@ -4,8 +4,10 @@
 #include <QString>
 #include "face.h"
 #include "vertex.h"
+#include <math.h>
 
 class Face;
+class Vertex;
 //class for halfedges
 class HalfEdge{
 public:
@@ -24,6 +26,7 @@ public:
     void addFace(Face* face);
     void removeFace(Face* face);
     void setTwin(HalfEdge* twin);
+    double angleBeetwen(HalfEdge* second);
 private:
     //twin of this edge
     HalfEdge *twin;

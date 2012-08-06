@@ -151,29 +151,31 @@ void SliceDialog::updateOutputPath(QString path){
 
 void SliceDialog::on_sliceBtn_clicked()
 {
-    QString stlFile = saveStl(this->lastDir+"/temp.stl");
+    QString stlFile = saveStl("./temp.stl");
     QStringList arguments;
-    this->outputFile = QFileDialog::getSaveFileName(this, tr("Save stl"), this->lastDir, tr("Gcode files (*.gcode)"));
+    this->outputFile = QFileDialog::getSaveFileName(this, tr("Save stl"), this->lastDir+"/"+ui->objectList->item(0)->text().left(ui->objectList->item(0)->text().lastIndexOf("."))+".gcode", tr("Gcode files (*.gcode)"));
     if(QFile::exists(this->outputFile)){
         QFile::remove(this->outputFile);
     }
-    arguments.append(stlFile);
-    arguments.append("--load");
-    arguments.append(this->configPath+"/"+ui->confCombo->currentText());
-    arguments.append("--output");
-    arguments.append(this->outputFile);
-    arguments.append("--print-center");
-    arguments.append(QString::number((int)this->printCenter.x())+","+QString::number((int)this->printCenter.y()));
-    arguments.append("--layer-height");
-    arguments.append(QString::number(ui->layerHeight->value()));
-    arguments.append("--fill-density");
-    arguments.append(QString::number((double)ui->fillDensity->value()/100));
-    qDebug() << arguments;
-    this->slicerProcess = new QProcess(this);
-    connect(this->slicerProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(updateStatus()));
-    connect(this->slicerProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(slicingFinished(int,QProcess::ExitStatus)));
-    slicerProcess->start(this->slicerPath,arguments);
-    ui->consoleGroup->show();
+    if(this->outputFile!=""){
+        arguments.append(stlFile);
+        arguments.append("--load");
+        arguments.append(this->configPath+"/"+ui->confCombo->currentText());
+        arguments.append("--output");
+        arguments.append(this->outputFile);
+        arguments.append("--print-center");
+        arguments.append(QString::number((int)this->printCenter.x())+","+QString::number((int)this->printCenter.y()));
+        arguments.append("--layer-height");
+        arguments.append(QString::number(ui->layerHeight->value()));
+        arguments.append("--fill-density");
+        arguments.append(QString::number((double)ui->fillDensity->value()/100));
+        qDebug() << arguments;
+        this->slicerProcess = new QProcess(this);
+        connect(this->slicerProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(updateStatus()));
+        connect(this->slicerProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(slicingFinished(int,QProcess::ExitStatus)));
+        slicerProcess->start(this->slicerPath,arguments);
+        ui->consoleGroup->show();
+    }
 }
 
 void SliceDialog::slicingFinished(int exitCode, QProcess::ExitStatus exitStatus){
@@ -182,7 +184,7 @@ void SliceDialog::slicingFinished(int exitCode, QProcess::ExitStatus exitStatus)
     emit fileSliced(this->outputFile);
     ui->consoleGroup->hide();
     this->hide();
-    QFile::remove(this->lastDir+"/temp.stl");
+    QFile::remove("./temp.stl");
 }
 
 void SliceDialog::updateStatus(){

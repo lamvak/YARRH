@@ -47,6 +47,7 @@ void StlObject::loadFile(QString fileName){
         line.remove("\r");
         //ascii file
         if(line.contains("solid")){
+            qDebug() << "ascii";
             while(!file->atEnd()){
                 line=file->readLine();
                 line.remove("\r");
@@ -57,7 +58,6 @@ void StlObject::loadFile(QString fileName){
                 ny=line.split(" ", QString::SkipEmptyParts).at(3).toFloat();
                 nz=line.split(" ", QString::SkipEmptyParts).at(4).toFloat();
                 line=file->readLine();
-                line.remove("\r");
                 line=file->readLine();
                 line.remove("\r");
                 x1=line.split(" ",QString::SkipEmptyParts).at(1).toFloat();
@@ -70,13 +70,12 @@ void StlObject::loadFile(QString fileName){
                 z2=line.split(" ",QString::SkipEmptyParts).at(3).toFloat();
                 line=file->readLine();
                 line.remove("\r");
+                qDebug() << line;
                 x3=line.split(" ",QString::SkipEmptyParts).at(1).toFloat();
                 y3=line.split(" ",QString::SkipEmptyParts).at(2).toFloat();
                 z3=line.split(" ",QString::SkipEmptyParts).at(3).toFloat();
                 line=file->readLine();
-                line.remove("\r");
                 line=file->readLine();
-                line.remove("\r");
                 if(triang_count==0){
                     xMax=x1;
                     yMax=y1;
@@ -103,9 +102,6 @@ void StlObject::loadFile(QString fileName){
 
                 //inserting face to list
                 face=addFace(e1,e2,e3);
-                e1->addFace(face);
-                e2->addFace(face);
-                e3->addFace(face);
 
                 triang_count++;
                 emit progress(file->pos(),file->size(), "Loading and analizing STL");
@@ -113,6 +109,7 @@ void StlObject::loadFile(QString fileName){
         }
         //if binary
         else{
+            qDebug() << "binary";
             QDataStream in(file);
             in.setByteOrder(QDataStream::LittleEndian);
             in.setFloatingPointPrecision(QDataStream::SinglePrecision);
@@ -120,6 +117,8 @@ void StlObject::loadFile(QString fileName){
             quint16 control_bytes;
             file->seek(80);
             in >> ntriangles;
+            this->vertexes.reserve(ntriangles*2);
+            this->edges.reserve(ntriangles*3);
             this->faces.reserve(ntriangles);
             while (triang_count < ntriangles) {
                 file->seek(84+triang_count*50+0+0);
@@ -177,9 +176,6 @@ void StlObject::loadFile(QString fileName){
                 e3=addHalfEdge(v3,v1);
                 //inserting face to list
                 face=addFace(e1,e2,e3);
-                e1->addFace(face);
-                e2->addFace(face);
-                e3->addFace(face);
 
                 triang_count++;
                 emit progress(file->pos(),file->size(), "Loading and analizing STL");
@@ -198,21 +194,21 @@ void StlObject::loadFile(QString fileName){
         this->height=(zMax-zMin)*0.01;
         this->offset.setZ(0);
         this->offset = this->offset*0.01;
-        qDebug() << "ilosc lini:" << this->edges.size();
-        qDebug() << "ilosc verteksow:" << this->vertexes.size();
-        qDebug() << "ilosc facy:" << this->faces.size();
-        qDebug() << "ilosc zlych edgy: " << this->badEdges.size();
 
         //check all edges to find non manifold ones, and nad normals
-        QMap<QString,HalfEdge*>::iterator j;
+        QHash<QString,HalfEdge*>::iterator j;
         for (j = this->edges.begin(); j != this->edges.end(); ++j){
             if(j.value()->getFaces().size()==0 && j.value()->getTwin()->getFaces().size()==1){
-                this->badEdges.append(j.value()->getTwin()->getHash());
+                this->badEdges.append(j.value()->getTwin());
             }
             if(j.value()->getFaces().size()==2 && j.value()->getTwin()->getFaces().size()==0){
                 badNormals=true;
             }
         }
+        qDebug() << "ilosc lini:" << this->edges.size();
+        qDebug() << "ilosc verteksow:" << this->vertexes.size();
+        qDebug() << "ilosc facy:" << this->faces.size();
+        qDebug() << "ilosc zlych edgy: " << this->badEdges.size();
 
         if(this->badEdges.size()>0){
             this->nonManifold=true;
@@ -235,7 +231,7 @@ void StlObject::loadFile(QString fileName){
 Vertex* StlObject::addVertex(float x, float y, float z){
     Vertex* out;
     //merging close vetreces so stiching algorythm have less work
-    float threshold=0.005;
+    float threshold=0.001;
     float roundedX=(int)(x/threshold)*threshold;
     float roundedY=(int)(y/threshold)*threshold;
     float roundedZ=(int)(z/threshold)*threshold;
@@ -266,7 +262,9 @@ HalfEdge* StlObject::addHalfEdge(Vertex *v1, Vertex *v2){
     else{
         out=this->edges.value(hash);
     }
-
+    //add edges to verteces
+    v1->addHalEdge(out);
+    v2->addHalEdge(out);
     return out;
 }
 
@@ -288,6 +286,9 @@ Face* StlObject::addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3){
     else{
         out = new Face(edge1,edge2,edge3);
         this->faces.insert(hash,out);
+        edge1->addFace(out);
+        edge2->addFace(out);
+        edge3->addFace(out);
         return out;
     }
 }
@@ -327,10 +328,8 @@ void StlObject::draw(bool picking){
     GLfloat   gray[4]={0.9,0.9,0.9,1.0};
     GLfloat   white[4]={0.9,1.0,0.8,1.0};
     GLfloat   red[4]={1.0,0.8,0.8,1.0};
-    GLfloat   green[4]={0.8,1.0,0.8,1.0};
     GLfloat   reder[4]={1.0,0.0,0.0,1.0};
     GLfloat   fCurrentColor[4];
-    GLfloat   lastColor[4];
     //iterator
     QHash<QString, Face*>::iterator i;
     // Get the current color
@@ -366,8 +365,8 @@ void StlObject::draw(bool picking){
         glDepthMask(false);
         glBegin(GL_LINES);
         for(int i=0; i<this->badEdges.size(); i++){
-            glVertex3f(this->edges.value(this->badEdges.at(i))->getStart()->x()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStart()->y()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStart()->z()*this->scaleValue);
-            glVertex3f(this->edges.value(this->badEdges.at(i))->getStop()->x()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStop()->y()*this->scaleValue, this->edges.value(this->badEdges.at(i))->getStop()->z()*this->scaleValue);
+            glVertex3f(this->badEdges.at(i)->getStart()->x()*this->scaleValue, this->badEdges.at(i)->getStart()->y()*this->scaleValue, this->badEdges.at(i)->getStart()->z()*this->scaleValue);
+            glVertex3f(this->badEdges.at(i)->getStop()->x()*this->scaleValue, this->badEdges.at(i)->getStop()->y()*this->scaleValue, this->badEdges.at(i)->getStop()->z()*this->scaleValue);
         }
         glEnd( );
         glDepthMask(true);
@@ -518,15 +517,69 @@ void StlObject::repairNormals(){
 
 void StlObject::repairHoles(){
     this->badEdges.clear();
-    QMap<QString,HalfEdge*>::iterator i;
+    QHash<QString,HalfEdge*>::iterator i;
+    //first find non manifold edges
     for (i = this->edges.begin(); i != this->edges.end(); ++i){
         //if half edge is non manifold
         if(i.value()->getFaces().size()==0 && i.value()->getTwin()->getFaces().size()==1){
-            this->badEdges.append(i.value()->getTwin()->getHash());
+            this->badEdges.append(i.value());
         }
     }
-//
+    //then check angles of each vertex in holes
+    QVector3D p1,p2,p3;
+    QList<HalfEdge*> tempList;
+    QList< QPair<double,PatchFace> > edgesList;
+    for(int j=0; j<this->badEdges.size(); j++){
+        tempList=this->badEdges.at(j)->getStop()->getEdges();
+        tempList=intersectLists(tempList,this->badEdges);
+        tempList.removeAt(tempList.indexOf(this->badEdges.at(j)));
+        p2=this->badEdges.at(j)->getStop()->toVector3D();
+        PatchFace newFace;
 
-//    qDebug() << this->startFace->getEdge2()->getFaces().size();
-//    qDebug() << this->startFace->getEdge3()->getFaces().size();
+        newFace.middlePoint=this->badEdges.at(j)->getStop();
+        newFace.edge1=this->badEdges.at(j);
+        newFace.edge2=tempList.at(0);
+
+        //add edge to list
+        newFace.angle=angle(newFace.edge1->getStart()->toVector3D()-p2,newFace.edge2->getStop()->toVector3D()-p2);
+        edgesList.append(qMakePair(newFace.angle,newFace));
+    }
+    //after we have all edges and angles sort list
+    qSort(edgesList.begin(), edgesList.end(), QPairFirstComparer());
+    for(int j=0; j<edgesList.size(); j++){
+        qDebug() << edgesList.at(j).first;
+    }
+    //now the fun part
+    if(edgesList.size()>0){
+        //there are three posibilitys
+        PatchFace currentFace=edgesList.at(0).second;
+        //angle is less than 75*
+        HalfEdge *newEdge;
+        Face *newFace;
+        if(currentFace.angle<75){
+            qDebug() << this->edges.size();
+            qDebug() << "dodaje face";
+            newEdge = addHalfEdge(currentFace.edge2->getStop(),currentFace.edge1->getStart());
+            newFace=addFace(currentFace.edge1,currentFace.edge2,newEdge);
+            qDebug() << newFace->getEdge1()->getStart() << newFace->getEdge2()->getStart() << newFace->getEdge3()->getStart();
+            qDebug() << this->edges.size();
+        }
+    }
+    //angle is less than 135*
+    //angle is greater than 135*
+}
+
+QList<HalfEdge*> StlObject::intersectLists(QList<HalfEdge *> list1, QList<HalfEdge *> list2){
+    QList<HalfEdge*> out;
+    for(int i=0; i<list1.size(); i++){
+        if(list2.contains(list1.at(i))){
+            out.append(list1.at(i));
+        }
+    }
+    return out;
+}
+
+double StlObject::angle(QVector3D p1, QVector3D p2){
+    qDebug() << p1 << p2;
+    return (acos(QVector3D::dotProduct(p1.normalized(),p2.normalized()))*(double)180)/3.14159;
 }

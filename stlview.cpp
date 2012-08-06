@@ -120,62 +120,64 @@ void StlView::mouseMoveEvent(QMouseEvent *event)
 {
     int dx = event->x() - lastPos.x();
     int dy = event->y() - lastPos.y();
-    QPointF clicked=screenToWorld(lastPos.x(),lastPos.y());
-    QPointF currentClicked=screenToWorld(event->x(),event->y());
-    QLineF start(lastObjectPos.x(),lastObjectPos.y(),clicked.x(),clicked.y());
-    QLineF current(lastObjectPos.x(),lastObjectPos.y(),currentClicked.x(),currentClicked.y());
-    if(this->objectSelected)
-    {
-        if(event->buttons() & Qt::LeftButton){
-            this->objects.value(this->object)->moveXY(lastObjectPos.x()+clicked.x()-lastPosWorld.x(),lastObjectPos.y()+clicked.y()-lastPosWorld.y());
-            //this->objects.value(this->object)->moveXY(clicked.x()-lastPosWorld.x(),clicked.y()-lastPosWorld.y());
-            emit selectedCors(this->objects.value(this->object)->getOffset().toPointF());
-        }
-        if(event->buttons() & Qt::RightButton){
-            this->objects.value(this->object)->scale(this->objects.value(this->object)->getScale()+(double)dx*0.01);
-            emit selectedScale((int)(this->objects.value(this->object)->getScale()*100));
-        }
-        if(event->buttons() & Qt::MiddleButton){
-            this->objects.value(this->object)->rotate(this->objects.value(this->object)->getRotation()-start.angleTo(current));
-            emit selectedRotation(((((int)this->objects.value(this->object)->getRotation()/5)*5)%360)*-1);
-        }
-        updateGL();
-    }
-    else{
-        if (event->buttons() & Qt::MiddleButton) {
-
-        } else if (event->buttons() & Qt::LeftButton) {
-
-            // Mouse point to angle conversion
-               theta -= dy*1.0;    //3.0 rotations possible
-               phi -= dx*1.0;
-
-            // Spherical to Cartesian conversion.
-            // Degrees to radians conversion factor 0.0174532
-               eyeX = r * cos(theta*0.0174532) * cos(phi*0.0174532);
-               eyeY = r * cos(theta*0.0174532) * sin(phi*0.0174532);
-               eyeZ = r * sin(theta*0.0174532);
-
-            // Reduce theta slightly to obtain another point on the same longitude line on the sphere.
-               GLfloat dt=1.0;
-               GLfloat eyeXtemp = r * cos(theta*0.0174532-dt) * cos(phi*0.0174532);
-               GLfloat eyeYtemp = r * cos(theta*0.0174532-dt) * sin(phi*0.0174532);
-               GLfloat eyeZtemp = r * sin(theta*0.0174532-dt);
-
-            // Connect these two points to obtain the camera's up vector.
-               upX=eyeXtemp-eyeX;
-               upY=eyeYtemp-eyeY;
-               upZ=eyeZtemp-eyeZ;
-               updateGL();
-
-        } else if (event->buttons() & Qt::RightButton){
-            xMove -= clicked.x()-currentClicked.x();
-            yMove -= clicked.y()-currentClicked.y();
+    if(event->x()>0 && event->y()>0 && event->x()<this->width() && event->y()< this->height()){
+        QPointF clicked=screenToWorld(lastPos.x(),lastPos.y());
+        QPointF currentClicked=screenToWorld(event->x(),event->y());
+        QLineF start(lastObjectPos.x(),lastObjectPos.y(),clicked.x(),clicked.y());
+        QLineF current(lastObjectPos.x(),lastObjectPos.y(),currentClicked.x(),currentClicked.y());
+        if(this->objectSelected)
+        {
+            if(event->buttons() & Qt::LeftButton){
+                this->objects.value(this->object)->moveXY(lastObjectPos.x()+clicked.x()-lastPosWorld.x(),lastObjectPos.y()+clicked.y()-lastPosWorld.y());
+                //this->objects.value(this->object)->moveXY(clicked.x()-lastPosWorld.x(),clicked.y()-lastPosWorld.y());
+                emit selectedCors(this->objects.value(this->object)->getOffset().toPointF());
+            }
+            if(event->buttons() & Qt::RightButton){
+                this->objects.value(this->object)->scale(this->objects.value(this->object)->getScale()+(double)dx*0.01);
+                emit selectedScale((int)(this->objects.value(this->object)->getScale()*100));
+            }
+            if(event->buttons() & Qt::MiddleButton){
+                this->objects.value(this->object)->rotate(this->objects.value(this->object)->getRotation()-start.angleTo(current));
+                emit selectedRotation(((((int)this->objects.value(this->object)->getRotation()/5)*5)%360)*-1);
+            }
             updateGL();
         }
-    }
+        else{
+            if (event->buttons() & Qt::MiddleButton) {
 
-    lastPos = event->pos();
+            } else if (event->buttons() & Qt::LeftButton) {
+
+                // Mouse point to angle conversion
+                theta -= dy*1.0;    //3.0 rotations possible
+                phi -= dx*1.0;
+
+                // Spherical to Cartesian conversion.
+                // Degrees to radians conversion factor 0.0174532
+                eyeX = r * cos(theta*0.0174532) * cos(phi*0.0174532);
+                eyeY = r * cos(theta*0.0174532) * sin(phi*0.0174532);
+                eyeZ = r * sin(theta*0.0174532);
+
+                // Reduce theta slightly to obtain another point on the same longitude line on the sphere.
+                GLfloat dt=0.01;
+                GLfloat eyeXtemp = r * cos(theta*0.0174532-dt) * cos(phi*0.0174532);
+                GLfloat eyeYtemp = r * cos(theta*0.0174532-dt) * sin(phi*0.0174532);
+                GLfloat eyeZtemp = r * sin(theta*0.0174532-dt);
+
+                // Connect these two points to obtain the camera's up vector.
+                upX=eyeXtemp-eyeX;
+                upY=eyeYtemp-eyeY;
+                upZ=eyeZtemp-eyeZ;
+                updateGL();
+
+            } else if (event->buttons() & Qt::RightButton){
+                xMove -= clicked.x()-currentClicked.x();
+                yMove -= clicked.y()-currentClicked.y();
+                updateGL();
+            }
+        }
+
+        lastPos = event->pos();
+    }
 }
 //wheel event
 void StlView::wheelEvent(QWheelEvent * event){
@@ -187,7 +189,7 @@ void StlView::wheelEvent(QWheelEvent * event){
         eyeZ = r * sin(theta*0.0174532);
 
      // Reduce theta slightly to obtain another point on the same longitude line on the sphere.
-        GLfloat dt=1.0;
+        GLfloat dt=0.01;
         GLfloat eyeXtemp = r * cos(theta*0.0174532-dt) * cos(phi*0.0174532);
         GLfloat eyeYtemp = r * cos(theta*0.0174532-dt) * sin(phi*0.0174532);
         GLfloat eyeZtemp = r * sin(theta*0.0174532-dt);
