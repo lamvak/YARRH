@@ -55,8 +55,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(printerObj, SIGNAL(settingTemp3(double)), this, SLOT(setTemp3FromGcode(double)));
     //updating head position in ui
     connect(printerObj, SIGNAL(currentPosition(QVector3D)), this, SLOT(updateHeadPosition(QVector3D)));
+    //print finished signal
+    connect(printerObj, SIGNAL(printFinished(bool)), this, SLOT(printFinished(bool)));
     //connect calibration dialog to printer
-    connect(calibrateDialog, SIGNAL(writeToPrinter(QString)), printerObj, SLOT(writeToPort(QString)),Qt::QueuedConnection);
+    connect(calibrateDialog, SIGNAL(writeToPrinter(QString)), printerObj, SLOT(send_now(QString)),Qt::QueuedConnection);
     //connect z slider
     connect(ui->zSlider, SIGNAL(valueChanged(int)), this, SLOT(moveZ(int)));
     connect(ui->zSlider, SIGNAL(sliderMoved(int)), this, SLOT(updateZ(int)));
@@ -143,13 +145,13 @@ void MainWindow::printerConnected(bool connected){
                 }
             }
             if(this->calibrateDialog->autoCalibrateX()){
-                this->printerObj->writeToPort("M92 X"+QString::number(this->calibrateDialog->getCallibrationsSetting().x()));
+                this->printerObj->writeToPort("M92 X"+QString::number(this->calibrateDialog->getCallibrationsSetting().x()),false);
             }
             if(this->calibrateDialog->autoCalibrateY()){
-                this->printerObj->writeToPort("M92 Y"+QString::number(this->calibrateDialog->getCallibrationsSetting().y()));
+                this->printerObj->writeToPort("M92 Y"+QString::number(this->calibrateDialog->getCallibrationsSetting().y()),false);
             }
             if(this->calibrateDialog->autoCalibrateZ()){
-                this->printerObj->writeToPort("M92 Z"+QString::number(this->calibrateDialog->getCallibrationsSetting().z()));
+                this->printerObj->writeToPort("M92 Z"+QString::number(this->calibrateDialog->getCallibrationsSetting().z()),false);
             }
     }
     else{
@@ -298,8 +300,10 @@ void MainWindow::on_printBtn_clicked(){
         ui->pauseBtn->setEnabled(true);
         ui->pauseBtn->blockSignals(true);
         ui->pauseBtn->setChecked(false);
+
         ui->pauseBtn->blockSignals(false);
         ui->pauseBtn->setText(tr("Pause"));
+
         ui->printBtn->setEnabled(false);
         ui->progressBar->show();
         this->calibrateDialog->setDisabled(true);
@@ -311,6 +315,7 @@ void MainWindow::on_printBtn_clicked(){
         this->currentLayer=0;
         ui->glWidget->setCurrentLayer(this->currentLayer);
         ui->headControlWidget->resetLayer();
+        ui->printBtn->setText(tr("Restart"));
     }
 }
 
@@ -332,15 +337,16 @@ void MainWindow::moveHead(QPoint point){
 void MainWindow::on_pauseBtn_toggled(bool pause){
     if(pause){
         ui->pauseBtn->setText(tr("Resume"));
-        QMetaObject::invokeMethod(printerObj,"stopPrint",Qt::DirectConnection);
+        QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
     }
     else{
         ui->pauseBtn->setText(tr("Pause"));
-        QMetaObject::invokeMethod(printerObj,"startPrint",Qt::DirectConnection);
+        QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
     }
     ui->axisControlGroup->setDisabled(!pause);
     ui->headControlWidget->hidePoints(!pause);
     this->calibrateDialog->setDisabled(!pause);
+    ui->printBtn->setEnabled(pause);
 }
 
 //draw temp on graph
@@ -375,6 +381,13 @@ void MainWindow::on_t1Btn_toggled(bool on){
             ui->t1Btn->setText("Off");
             ui->tempGraphWidget->setTargets(value,-1,-1);
             QMetaObject::invokeMethod(printerObj,"setTemp1",Qt::QueuedConnection,Q_ARG(int, value));
+            QStringList tempList;
+            for(int i=0; i<ui->t1Combo->count(); i++){
+                tempList.append(ui->t1Combo->itemText(i));
+            }
+            if(!tempList.contains(ui->t1Combo->currentText())){
+                ui->t1Combo->addItem(ui->t1Combo->currentText());
+            }
         }
         else{
             ui->t1Btn->setText("On");
@@ -396,6 +409,14 @@ void MainWindow::on_hbBtn_toggled(bool on){
             ui->hbBtn->setText("Off");
             ui->tempGraphWidget->setTargets(-1,-1,value);
             QMetaObject::invokeMethod(printerObj,"setTemp3",Qt::QueuedConnection,Q_ARG(int, value));
+
+            QStringList tempList;
+            for(int i=0; i<ui->hbCombo->count(); i++){
+                tempList.append(ui->hbCombo->itemText(i));
+            }
+            if(!tempList.contains(ui->hbCombo->currentText())){
+                ui->hbCombo->addItem(ui->hbCombo->currentText());
+            }
         }
         else{
             ui->hbBtn->setText("On");
@@ -439,7 +460,7 @@ void MainWindow::setTemp3FromGcode(double value){
 }
 void MainWindow::moveZ(int value){
     ui->zMoveTo->setText("Z: "+QString::number(0));
-    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)value),Q_ARG(int, ui->speedZSpinBox->value()));
+    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)value),Q_ARG(int, ui->speedZSpinBox->value()), Q_ARG(bool, false));
 }
 
 void MainWindow::updateZ(int value){
@@ -607,7 +628,7 @@ void MainWindow::restoreSettings(){
 //writing command to console
 void MainWindow::on_outLine_returnPressed()
 {
-    QMetaObject::invokeMethod(printerObj,"writeToPort",Qt::QueuedConnection,Q_ARG(QString, ui->outLine->text().toUpper()));
+    QMetaObject::invokeMethod(printerObj,"send_now",Qt::QueuedConnection,Q_ARG(QString, ui->outLine->text().toUpper()));
     ui->outLine->clear();
 }
 
@@ -676,4 +697,24 @@ void MainWindow::updatadeSize(QVector3D newSize){
     ui->headControlWidget->setSize(newSize.x(), newSize.y());
     ui->headControlWidget->hidePoints(ui->headControlWidget->getPointsHidden());
     ui->zSlider->setMaximum(newSize.z()*10);
+}
+
+void MainWindow::printFinished(bool value){
+    if(value){
+        qDebug() << "koniec";
+        ui->pauseBtn->setEnabled(false);
+        ui->printBtn->setEnabled(true);
+        ui->progressBar->setHidden(true);
+        ui->printBtn->setText(tr("Print"));
+    }
+}
+
+void MainWindow::on_fineUpZBtn_clicked()
+{
+   QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)0.1),Q_ARG(int, ui->speedZSpinBox->value()), Q_ARG(bool, true));
+}
+
+void MainWindow::on_fineDownZBtn_clicked()
+{
+    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)-0.1),Q_ARG(int, ui->speedZSpinBox->value()), Q_ARG(bool, true));
 }

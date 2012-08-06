@@ -106,45 +106,47 @@ void GlWidget::setCurrentLayer(int layer){
 
   //mouse move event
   void GlWidget::mouseMoveEvent(QMouseEvent *event)
-   {
-       int dx = event->x() - lastPos.x();
-       int dy = event->y() - lastPos.y();
-       QPointF clicked=screenToWorld(lastPos.x(),lastPos.y());
-       QPointF currentClicked=screenToWorld(event->x(),event->y());
+  {
+      int dx = event->x() - lastPos.x();
+      int dy = event->y() - lastPos.y();
+      if(event->x()>0 && event->y()>0 && event->x()<this->width() && event->y()< this->height()){
+          QPointF clicked=screenToWorld(lastPos.x(),lastPos.y());
+          QPointF currentClicked=screenToWorld(event->x(),event->y());
 
-       if (event->buttons() & Qt::MiddleButton) {
+          if (event->buttons() & Qt::MiddleButton) {
 
-       } else if (event->buttons() & Qt::LeftButton) {          
-           // Mouse point to angle conversion
-              theta -= dy*1.0;    //3.0 rotations possible
+          } else if (event->buttons() & Qt::LeftButton) {
+              // Mouse point to angle conversion
+              theta -= dy*1.0;
               phi -= dx*1.0;
 
-           // Spherical to Cartesian conversion.
-           // Degrees to radians conversion factor 0.0174532
+              // Spherical to Cartesian conversion.
+              // Degrees to radians conversion factor 0.0174532
               eyeX = r * cos(theta*0.0174532) * cos(phi*0.0174532);
               eyeY = r * cos(theta*0.0174532) * sin(phi*0.0174532);
               eyeZ = r * sin(theta*0.0174532);
 
-           // Reduce theta slightly to obtain another point on the same longitude line on the sphere.
-              GLfloat dt=1.0;
+              // Reduce theta slightly to obtain another point on the same longitude line on the sphere.
+              GLfloat dt=0.01;
               GLfloat eyeXtemp = r * cos(theta*0.0174532-dt) * cos(phi*0.0174532);
               GLfloat eyeYtemp = r * cos(theta*0.0174532-dt) * sin(phi*0.0174532);
               GLfloat eyeZtemp = r * sin(theta*0.0174532-dt);
 
-           // Connect these two points to obtain the camera's up vector.
+              // Connect these two points to obtain the camera's up vector.
               upX=eyeXtemp-eyeX;
               upY=eyeYtemp-eyeY;
               upZ=eyeZtemp-eyeZ;
-              qDebug() << upX << upY << upZ << eyeX << eyeY << eyeZ;
-              updateGL();
-       } else if (event->buttons() & Qt::RightButton){
-           xMove -= clicked.x()-currentClicked.x();
-           yMove -= clicked.y()-currentClicked.y();
-           updateGL();
-       }
 
-       lastPos = event->pos();
-   }
+              updateGL();
+          } else if (event->buttons() & Qt::RightButton){
+              xMove -= clicked.x()-currentClicked.x();
+              yMove -= clicked.y()-currentClicked.y();
+              updateGL();
+          }
+
+          lastPos = event->pos();
+      }
+  }
 //wheel event
   void GlWidget::wheelEvent(QWheelEvent * event){
 

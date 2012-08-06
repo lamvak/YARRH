@@ -20,7 +20,7 @@
 //version number
 #define VERSION_MAJOR       0
 #define VERSION_MINOR       1
-#define VERSION_REVISION    6
+#define VERSION_REVISION    7
 
 namespace Ui {
     class MainWindow;
@@ -94,6 +94,9 @@ private slots:
     void on_graphGroupBox_toggled(bool arg1);
     void on_actionOptions_triggered();
     void updatadeSize(QVector3D newSize);
+    void printFinished(bool);
+    void on_fineUpZBtn_clicked();
+    void on_fineDownZBtn_clicked();
 };
 
 #endif // MAINWINDOW_H
