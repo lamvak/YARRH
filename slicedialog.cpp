@@ -5,7 +5,6 @@ SliceDialog::SliceDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SliceDialog)
 {
-    this->selectedObject="";
     ui->setupUi(this);
     this->stlView = new StlView(ui->stlViewWidget);
     ui->stlViewWidget->layout()->addWidget(this->stlView);
@@ -17,13 +16,11 @@ SliceDialog::SliceDialog(QWidget *parent) :
     connect(this->stlView, SIGNAL(doneProcessing(bool)),ui->progressBar,SLOT(setHidden(bool)));
 
     connect(this->stlView, SIGNAL(selectedCors(QPointF)), this, SLOT(setOffset(QPointF)));
-    connect(this->stlView, SIGNAL(selectedCol(QString)), this, SLOT(setSelectcedObject(QString)));
 
     connect(ui->rotationsSpinBox, SIGNAL(valueChanged(int)), this, SLOT(rotateObject(int)));
     connect(ui->scaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(scaleObject(int)));
     connect(ui->xSpinBox, SIGNAL(valueChanged(double)), this, SLOT(moveObjectX(double)));
     connect(ui->ySpinBox, SIGNAL(valueChanged(double)), this, SLOT(moveObjectY(double)));
-    connect(ui->objectList, SIGNAL(currentRowChanged(int)), this, SLOT(listItemSelected(int)));
     connect(this->stlView, SIGNAL(nonManifold(QString)), this, SLOT(nonManifold(QString)));
     ui->consoleGroup->hide();
     ui->objectOptionGroup->setEnabled(false);
@@ -33,20 +30,6 @@ SliceDialog::SliceDialog(QWidget *parent) :
     QMovie *movie = new QMovie(":/imgs/loader.gif");
     ui->loaderLabel->setMovie(movie);
     movie->start();
-}
-
-void SliceDialog::listItemSelected(int index){
-    qDebug() << index;
-    if(index>=0){
-        this->stlView->selectObject(this->itemColors.at(index));
-        this->selectedObject=this->itemColors.at(index);
-        ui->objectOptionGroup->setEnabled(true);
-        ui->removeBtn->setEnabled(true);
-    }
-    if(index<0){
-      ui->objectOptionGroup->setEnabled(false);
-      ui->removeBtn->setEnabled(false);
-    }
 }
 
 void SliceDialog::setOffset(QPointF point){
@@ -59,15 +42,15 @@ void SliceDialog::setOffset(QPointF point){
 }
 
 void SliceDialog::moveObjectX(double x){
-    this->stlView->moveObject(this->selectedObject, QPointF(x/10,ui->ySpinBox->value()/10));
+    this->stlView->moveObject(QPointF(x/10,ui->ySpinBox->value()/10));
 }
 
 void SliceDialog::moveObjectY(double y){
-   this->stlView->moveObject(this->selectedObject, QPointF(ui->xSpinBox->value()/10,y/10));
+   this->stlView->moveObject(QPointF(ui->xSpinBox->value()/10,y/10));
 }
 
 void SliceDialog::rotateObject(int ang){
-    this->stlView->rotateObject(this->selectedObject, (double)(360-ang));
+    this->stlView->rotateObject((double)(360-ang));
 }
 
 void SliceDialog::objectRotated(int ang){
@@ -83,14 +66,7 @@ void SliceDialog::objectScaled(int scale){
 }
 
 void SliceDialog::scaleObject(int scale){
-    this->stlView->scaleObject(this->selectedObject, (double)scale/100);
-}
-
-void SliceDialog::setSelectcedObject(QString name){
-    this->selectedObject=name;
-    ui->objectList->blockSignals(true);
-    ui->objectList->setCurrentRow(this->itemColors.indexOf(name));
-    ui->objectList->blockSignals(false);
+    this->stlView->scaleObject((double)scale/100);
 }
 
 void SliceDialog::nonManifold(QString name){
@@ -118,18 +94,11 @@ void SliceDialog::setLastDir(QString dir){
 }
 
 void SliceDialog::clearObjects(){
-    ui->objectList->blockSignals(true);
-    while(this->itemColors.size()>0){
-        this->stlView->removeObject(this->itemColors.at(0));
-        this->itemColors.removeAt(0);
-        ui->objectList->takeItem(0);
-    }
-    ui->objectList->blockSignals(false);
+    this->stlView->removeObject();
 }
 
 void SliceDialog::addObject(QString file){
-    this->itemColors.append(this->stlView->addObject(file));
-    ui->objectList->addItem(file.right(file.length()-file.lastIndexOf("/")-1));
+    this->stlView->addObject(file);
 }
 
 void SliceDialog::on_addBtn_clicked()
@@ -153,7 +122,10 @@ void SliceDialog::on_sliceBtn_clicked()
 {
     QString stlFile = saveStl("./temp.stl");
     QStringList arguments;
-    this->outputFile = QFileDialog::getSaveFileName(this, tr("Save stl"), this->lastDir+"/"+ui->objectList->item(0)->text().left(ui->objectList->item(0)->text().lastIndexOf("."))+".gcode", tr("Gcode files (*.gcode)"));
+    QString fileName = stlView->getObject(stlView->getColorsList().at(0))->getFileName();
+    fileName.remove(0,fileName.lastIndexOf("/")+1);
+    fileName=fileName.left(fileName.lastIndexOf("."));
+    this->outputFile = QFileDialog::getSaveFileName(this, tr("Save stl"), this->lastDir+"/"+fileName+".gcode", tr("Gcode files (*.gcode)"));
     if(QFile::exists(this->outputFile)){
         QFile::remove(this->outputFile);
     }
@@ -200,14 +172,7 @@ void SliceDialog::setTableSize(int x, int y){
 
 void SliceDialog::on_removeBtn_clicked()
 {
-    this->stlView->removeObject(this->selectedObject);
-    this->itemColors.removeAt(this->itemColors.indexOf(this->selectedObject));
-
-    ui->objectList->blockSignals(true);
-    ui->objectList->takeItem(ui->objectList->currentRow());
-    ui->objectList->setCurrentRow(ui->objectList->count()-1);
-    this->listItemSelected(ui->objectList->count()-1);
-    ui->objectList->blockSignals(false);
+    this->stlView->removeObject();
 }
 
 QString SliceDialog::saveStl(QString fileName)
@@ -218,14 +183,11 @@ QString SliceDialog::saveStl(QString fileName)
     }
 
     QList<QVector3D> data;
-    for(int i=0; i<this->itemColors.size(); i++){
-        data.append(this->stlView->getObject(this->itemColors.at(i))->getTriangles());
+    QStringList objects=stlView->getColorsList();
+    for(int i=0; i<objects.size(); i++){
+        data.append(this->stlView->getObject(objects.at(i))->getTriangles());
     }
     int trianglesSize=data.size()/4;
-    QProgressDialog progress(tr("Saving stl"), 0, 0, 0, this);
-    progress.setWindowModality(Qt::WindowModal);
-    progress.show();
-    progress.setMaximum(data.size());
 
     if(fileName!=""){
         //for finding print center
@@ -239,7 +201,7 @@ QString SliceDialog::saveStl(QString fileName)
             for (int i = 0; i < 20; i++) out << (int)0;
             out << trianglesSize;
             for(int i=0; i<data.size(); i+=4){
-                progress.setValue(i);
+                emit updateProgress(i,data.size(),tr("Saving stl"));
                 out << (float)data.at(i).x();
                 out << (float)data.at(i).y();
                 out << (float)data.at(i).z();
@@ -271,6 +233,7 @@ QString SliceDialog::saveStl(QString fileName)
         qDebug() << xMax << xMin << yMax << yMin;
         file->close();
     }
+    ui->progressBar->hide();
     return fileName;
 }
 
@@ -288,22 +251,22 @@ void SliceDialog::on_confCombo_currentIndexChanged(const QString &arg1)
 
 void SliceDialog::on_mirrorXBtn_clicked()
 {
-    this->stlView->mirrorObject(this->selectedObject, 'x');
+    this->stlView->mirrorObject('x');
 }
 
 void SliceDialog::on_mirrorYBtn_clicked()
 {
-    this->stlView->mirrorObject(this->selectedObject, 'y');
+    this->stlView->mirrorObject('y');
 }
 
 void SliceDialog::on_mirrorZBtn_clicked()
 {
-   this->stlView->mirrorObject(this->selectedObject, 'z');
+   this->stlView->mirrorObject('z');
 }
 
 void SliceDialog::on_repeairNormals_clicked()
 {
-     this->stlView->repeairObjectNormals(this->selectedObject);
+     this->stlView->repeairObjectNormals();
 }
 
 void SliceDialog::updateProgress(int value, int max, QString text){
@@ -319,5 +282,16 @@ void SliceDialog::updateProgress(int value, int max, QString text){
 
 void SliceDialog::on_repairHoles_clicked()
 {
-   this->stlView->repeairObjectHoles(this->selectedObject);
+   this->stlView->repeairObjectHoles();
+}
+
+void SliceDialog::on_duplicateBtn_clicked()
+{
+    this->stlView->duplicateObject();
+}
+
+void SliceDialog::on_mToCenterBtn_clicked()
+{
+    //this->stlView->getObject(this->selectedObject)->moveXY(((double)this->xSize/2)*0.1,((double)this->ySize/2)*0.1);
+    this->stlView->update();
 }

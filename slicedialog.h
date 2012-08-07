@@ -33,14 +33,12 @@ private slots:
     void slicingFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void updateStatus();
     void setOffset(QPointF);
-    void setSelectcedObject(QString);
     void rotateObject(int);
     void scaleObject(int);
     void objectScaled(int);
     void objectRotated(int);
     void moveObjectX(double);
     void moveObjectY(double);
-    void listItemSelected(int);
 
     void nonManifold(QString name);
     void on_removeBtn_clicked();
@@ -58,6 +56,10 @@ private slots:
     void updateProgress(int value, int max, QString text);
     void on_repairHoles_clicked();
 
+    void on_duplicateBtn_clicked();
+
+    void on_mToCenterBtn_clicked();
+
 private:
     Ui::SliceDialog *ui;
     QString lastDir;
@@ -70,8 +72,6 @@ private:
     QPoint printCenter;
     QProcess *slicerProcess;
     StlView *stlView;
-    QString selectedObject;
-    QStringList itemColors;
     QString saveStl(QString fileName);
 signals:
     void fileSliced(QString);
