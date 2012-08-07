@@ -3,20 +3,42 @@
 
 ##What is it?
 Yarrh is new host software for RepRap type printers. Its written in C++ and Qt library.
-Main new features will be:
+Main new features are:
 - 3D view of printed object
+- 3D compose table
+- easy manipulation of objects
+- edditing group of objects at once
 - layer view for single and all layers
 - calibration procedures for printer with automatic stepps per mm calculations
 - integreated ui for slic3r
 - predefined configs for slicing
-- control for multiply extruders
+- easy to use intuitive GUI 
+- one file download, no dependencies, just install and use
 
-Currently software is in early alpha, project was started 25.06.2012.
-Its hardly usable at the moment, it works, but very poorly. At the moment is only proof of concept and needs lots of optymalization and work.
+Currently software is in beta stage, project was started 25.06.2012.
 
 ##How does it look?
 You can see short demo of software running on youtube
 http://www.youtube.com/watch?v=ayTQ40QOoqo&f
 
-#Who is the author?
+## Licensing
+==========
+
+Copyright (C) 2012 Arkadiusz Spiewak (Wulfnor)
+
+This library is free software; you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation; either version 3 of the License, or (at your option)
+any later version.
+
+This library is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this library; if not, write to the Free Software Foundation, Inc.,
+59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+
+##Author
 Author is: Arkadiusz Spiewak a'ka Wulfnor
