@@ -38,11 +38,12 @@ struct PatchFace
 class StlObject : public QObject
 {
     Q_OBJECT
+protected:
+    QString fileName;
 private:
     double scaleValue;
     double rotation;
     QString nameString;
-    QString fileName;
     QVector3D offset;
     bool selected;
     bool colliding;
@@ -50,6 +51,9 @@ private:
     float lenght;
     float height;
     bool nonManifold;
+    bool mirrorX;
+    bool mirrorY;
+    bool mirrorZ;
     //object description
 
     //list of verteces
@@ -74,6 +78,7 @@ private:
 public:
     explicit StlObject(QString fileName, QObject *parent = 0);
     explicit StlObject(QObject *parent = 0);
+    void copy(StlObject *copyFrom);
     void draw(bool);
     void select(bool);
     void moveXY(double x, double y);
@@ -88,6 +93,10 @@ public:
     void mirror(QChar axis);
     void repairHoles();
     void repairNormals();
+    QString getFileName();
+    inline double getWidth(){ return width*scaleValue; }
+    inline double getLenght(){ return lenght*scaleValue; }
+    inline double getHeight(){ return height*scaleValue; }
 signals:
     void progress(int value, int max, QString text);
     void doneProcessing(bool);

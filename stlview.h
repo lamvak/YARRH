@@ -16,7 +16,9 @@ public:
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
     QString addObject(QString fileName);
+    QString addObject(StlObject *object);
     void setTableSize(int x, int y);
+    QStringList getColorsList();
 signals:
     void objectPicked(bool);
     void selectedRotation(int);
@@ -28,14 +30,15 @@ signals:
     void doneProcessing(bool);
 public slots:
     void selectObject(QString);
-    void repeairObjectNormals(QString);
-    void repeairObjectHoles(QString);
+    void repeairObjectNormals();
+    void repeairObjectHoles();
     StlObject* getObject(QString);
-    void removeObject(QString);
-    void rotateObject(QString, double);
-    void scaleObject(QString, double);
-    void moveObject(QString, QPointF);
-    void mirrorObject(QString name, QChar axis);
+    void removeObject();
+    void rotateObject(double);
+    void scaleObject(double);
+    void moveObject(QPointF);
+    void mirrorObject(QChar axis);
+    void duplicateObject();
 protected:
     void initializeGL();
     void paintGL();
@@ -53,7 +56,8 @@ private:
     int sizeX, sizeY;
     double clickedX, clickedY;
     bool objectSelected;
-    QString object;
+    //list of selected objets
+    QStringList selectedObjects;
     QColor objectColor;
     float xMove;
     float yMove;
@@ -68,6 +72,7 @@ private:
     QHash<QString, StlObject*> objects;
 
     QPointF screenToWorld(int x, int y);
+
     //getting ready to use bullet physics engine
 //    btCollisionWorld* collisionWorld;
 //    btDefaultCollisionConfiguration* collisionConfiguration;

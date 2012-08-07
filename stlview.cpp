@@ -33,6 +33,7 @@ StlView::StlView(QWidget *parent)
     qtGreen = QColor::fromCmykF(0.40, 0.0, 1.0, 0.0);
     qtPurple = QColor::fromCmykF(0.39, 0.39, 0.0, 0.0);
     objectSelected = false;
+    this->setFocusPolicy(Qt::StrongFocus);
     //setting up collison detection
 //    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
 //    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
@@ -65,48 +66,72 @@ void StlView::mousePressEvent(QMouseEvent *event)
     glGetIntegerv(GL_VIEWPORT,viewport);
     paintPicking();
     QColor pickedColor=QColor(this->grabFrameBuffer().pixel(lastPos)).toRgb();
-    if(pickedColor!=QColor(78,78,127)){
-        if(this->objects.keys().contains(pickedColor.name())){
-            if(this->objectSelected){
-               this->objects.value(this->object)->select(false);
+    qDebug() << pickedColor.name();
+    //if control is pressed
+    if(event->modifiers()==Qt::ControlModifier){
+        //if object is already selected then deselect it
+        if(this->selectedObjects.contains(pickedColor.name())){
+            this->objects.value(pickedColor.name())->select(false);
+            this->selectedObjects.removeAt(this->selectedObjects.indexOf(pickedColor.name()));
+        }
+        //else select it
+        else{
+            if(pickedColor.name()!="#4e4e7f"){
+                this->objects.value(pickedColor.name())->select(true);
+                this->selectedObjects.append(pickedColor.name());
             }
+        }
+    }
+    //if we are in single object selection mode
+    else{
+        //clear all selections
+        if(this->selectedObjects.size()>0){
+            for(int i=0; i<this->selectedObjects.size(); i++){
+                this->objects.value(this->selectedObjects.at(i))->select(false);
+            }
+            this->selectedObjects.clear();
+        }
+        //if object is clicked
+        if(this->objects.keys().contains(pickedColor.name())){
+            //select it
+            this->selectedObjects.append(pickedColor.name());
             this->objects.value(pickedColor.name())->select(true);
             lastObjectPos=this->objects.value(pickedColor.name())->getOffset().toPointF();
-            this->objectSelected=true;
-            this->object=pickedColor.name();
-            updateGL();
         }
+    }
+    updateGL();
+    if(this->selectedObjects.size()>0){
+        this->objectSelected=true;
     }
     else{
-        if(this->objectSelected){
-            this->objects.value(this->object)->select(false);
-            this->objectSelected=false;
-            this->object="";
-        }
-        updateGL();
+        this->objectSelected=false;
     }
     emit objectPicked(this->objectSelected);
-    emit selectedCol(this->object);
     if(this->objectSelected){
-        emit selectedRotation(((((int)this->objects.value(this->object)->getRotation()/5)*5)%360)*-1);
-        emit selectedScale((int)(this->objects.value(this->object)->getScale()*100));
-        emit selectedCors(this->objects.value(this->object)->getOffset().toPointF());
+        emit selectedCol(this->selectedObjects.last());
+        emit selectedRotation(((((int)this->objects.value(this->selectedObjects.last())->getRotation()/5)*5)%360)*-1);
+        emit selectedScale((int)(this->objects.value(this->selectedObjects.last())->getScale()*100));
+        emit selectedCors(this->objects.value(this->selectedObjects.last())->getOffset().toPointF());
     }
 }
 
 void StlView::selectObject(QString name){
-    //deselect old object
+    //deselect old objects
     qDebug() << name;
-    if(this->object!=""){
-        this->objects.value(this->object)->select(false);
+    if(this->selectedObjects.size()>0){
+        for(int i=0; i<this->selectedObjects.size(); i++){
+            this->objects.value(this->selectedObjects.at(i))->select(false);
+        }
+        this->selectedObjects.clear();
     }
+
     this->objectSelected=true;
-    this->object=name;
-    this->objects.value(this->object)->select(true);
+    this->selectedObjects.append(name);
+    this->objects.value(this->selectedObjects.last())->select(true);
     //update ui
-    emit selectedRotation(((((int)this->objects.value(this->object)->getRotation()/5)*5)%360)*-1);
-    emit selectedScale((int)(this->objects.value(this->object)->getScale()*100));
-    emit selectedCors(this->objects.value(this->object)->getOffset().toPointF());
+    emit selectedRotation(((((int)this->objects.value(this->selectedObjects.last())->getRotation()/5)*5)%360)*-1);
+    emit selectedScale((int)(this->objects.value(this->selectedObjects.last())->getScale()*100));
+    emit selectedCors(this->objects.value(this->selectedObjects.last())->getOffset().toPointF());
     updateGL();
 }
 
@@ -128,17 +153,19 @@ void StlView::mouseMoveEvent(QMouseEvent *event)
         if(this->objectSelected)
         {
             if(event->buttons() & Qt::LeftButton){
-                this->objects.value(this->object)->moveXY(lastObjectPos.x()+clicked.x()-lastPosWorld.x(),lastObjectPos.y()+clicked.y()-lastPosWorld.y());
-                //this->objects.value(this->object)->moveXY(clicked.x()-lastPosWorld.x(),clicked.y()-lastPosWorld.y());
-                emit selectedCors(this->objects.value(this->object)->getOffset().toPointF());
+                for(int i=0; i<this->selectedObjects.size(); i++){
+                    this->objects.value(this->selectedObjects.at(i))->moveXY(this->objects.value(this->selectedObjects.at(i))->getOffset().x()+currentClicked.x()-clicked.x(),this->objects.value(this->selectedObjects.at(i))->getOffset().y()+currentClicked.y()-clicked.y());
+                }
+               //this->objects.value(this->object)->moveXY(clicked.x()-lastPosWorld.x(),clicked.y()-lastPosWorld.y());
+                emit selectedCors(this->objects.value(this->selectedObjects.last())->getOffset().toPointF());
             }
             if(event->buttons() & Qt::RightButton){
-                this->objects.value(this->object)->scale(this->objects.value(this->object)->getScale()+(double)dx*0.01);
-                emit selectedScale((int)(this->objects.value(this->object)->getScale()*100));
+                this->objects.value(this->selectedObjects.last())->scale(this->objects.value(this->selectedObjects.last())->getScale()+(double)dx*0.01);
+                emit selectedScale((int)(this->objects.value(this->selectedObjects.last())->getScale()*100));
             }
             if(event->buttons() & Qt::MiddleButton){
-                this->objects.value(this->object)->rotate(this->objects.value(this->object)->getRotation()-start.angleTo(current));
-                emit selectedRotation(((((int)this->objects.value(this->object)->getRotation()/5)*5)%360)*-1);
+                this->objects.value(this->selectedObjects.last())->rotate(this->objects.value(this->selectedObjects.last())->getRotation()-start.angleTo(current));
+                emit selectedRotation(((((int)this->objects.value(this->selectedObjects.last())->getRotation()/5)*5)%360)*-1);
             }
             updateGL();
         }
@@ -207,19 +234,6 @@ void StlView::wheelEvent(QWheelEvent * event){
     }
 }
 
-void StlView::rotateObject(QString name , double ang){
-    this->objects.value(name)->rotate(ang);
-    updateGL();
-}
-
-void StlView::scaleObject(QString name , double scale){
-    this->objects.value(name)->scale(scale);
-    updateGL();
-}
-void StlView::moveObject(QString name , QPointF point){
-    this->objects.value(name)->moveXY(point.x(),point.y());
-    updateGL();
-}
 //inizalization of gl
 
 void StlView::initializeGL()
@@ -261,7 +275,6 @@ void StlView::paintGL()
         this->objects.values().at(i)->draw(false);
     }
 }
-
 
 void StlView::paintPicking(){
     glDisable(GL_TEXTURE_2D);
@@ -502,31 +515,29 @@ QString StlView::addObject(QString fileName){
     connect(newObject, SIGNAL(doneProcessing(bool)), this, SIGNAL(doneProcessing(bool)));
     newObject->loadFile(fileName);
     this->objects.insert(name, newObject);
-//    btTriangleMesh* data = new btTriangleMesh();
-//    QList<QVector3D> verteces = this->objects.values().last()->getTriangles();
-//    qDebug() << verteces.size();
-//    btVector3 A;
-//    btVector3 B;
-//    btVector3 C;
-//    for(int i=0; i<verteces.size(); i+=3){
-//        A.setX(verteces.at(i).x());
-//        A.setY(verteces.at(i).y());
-//        A.setZ(verteces.at(i).z());
-//        B.setX(verteces.at(i+1).x());
-//        B.setY(verteces.at(i+1).y());
-//        B.setZ(verteces.at(i+1).z());
-//        C.setX(verteces.at(i+2).x());
-//        C.setY(verteces.at(i+2).y());
-//        C.setZ(verteces.at(i+2).z());
-//        data->addTriangle(A,B,C,false);
-//    }
-//    btBvhTriangleMeshShape* shape=new btBvhTriangleMeshShape(data,true,true);
     if(this->objects.value(name)->getIsManifold()){
         emit nonManifold(name);
     }
     updateGL();
     return name;
 }
+
+QString StlView::addObject(StlObject *object){
+    QString name=QColor(qrand()%256,qrand()%256,qrand()%256).name();
+    qDebug() << object->getFileName();
+    StlObject *newObject=new StlObject();
+    newObject->copy(object);
+    connect(newObject, SIGNAL(progress(int,int,QString)), this, SIGNAL(progress(int,int,QString)));
+    connect(newObject, SIGNAL(doneProcessing(bool)), this, SIGNAL(doneProcessing(bool)));
+    this->objects.insert(name, newObject);
+    if(this->objects.value(name)->getIsManifold()){
+        emit nonManifold(name);
+    }
+    newObject->moveXY(newObject->getOffset().x()+newObject->getWidth()+0.1,newObject->getOffset().y());
+    updateGL();
+    return name;
+}
+
 
 void StlView::setTableSize(int x, int y){
     this->sizeX=x;
@@ -540,26 +551,66 @@ StlObject* StlView::getObject(QString name){
     return this->objects.value(name);
 }
 
-void StlView::removeObject(QString name){
-    delete this->objects.value(name);
-    this->objects.remove(name);
-    this->objectSelected=false;
-    this->object="";
+void StlView::removeObject(){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        delete this->objects.value(this->selectedObjects.at(i));
+        this->objects.remove(this->selectedObjects.at(i));
+        this->objectSelected=false;
+    }
+    this->selectedObjects.clear();
+    emit objectPicked(false);
     updateGL();
 }
 
-void StlView::mirrorObject(QString name, QChar axis){
-    this->objects.value(name)->mirror(axis);
+void StlView::mirrorObject(QChar axis){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        this->objects.value(this->selectedObjects.at(i))->mirror(axis);
+    }
     updateGL();
 }
 
 
-void StlView::repeairObjectNormals(QString name){
-    this->objects.value(name)->repairNormals();
+void StlView::repeairObjectNormals(){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        this->objects.value(this->selectedObjects.at(i))->repairNormals();
+    }
     updateGL();
 }
 
-void StlView::repeairObjectHoles(QString name){
-    this->objects.value(name)->repairHoles();
+void StlView::repeairObjectHoles(){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        this->objects.value(this->selectedObjects.at(i))->repairHoles();
+    }
     updateGL();
+}
+
+void StlView::rotateObject(double ang){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        this->objects.value(this->selectedObjects.at(i))->rotate(ang);
+    }
+    updateGL();
+}
+
+void StlView::scaleObject(double scale){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        this->objects.value(this->selectedObjects.at(i))->scale(scale);
+    }
+    updateGL();
+}
+void StlView::moveObject(QPointF point){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        this->objects.value(this->selectedObjects.at(i))->moveXY(point.x(),point.y());
+    }
+    updateGL();
+}
+
+void StlView::duplicateObject(){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        addObject(this->objects.value(this->selectedObjects.at(i)));
+    }
+    updateGL();
+}
+
+QStringList StlView::getColorsList(){
+    return this->objects.keys();
 }

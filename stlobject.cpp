@@ -9,6 +9,9 @@ QObject(parent)
     this->selected=false;
     this->colliding=false;
     this->nonManifold=false;
+    this->mirrorX=false;
+    this->mirrorY=false;
+    this->mirrorZ=false;
 }
 
 StlObject::StlObject(QString fileName, QObject *parent) :
@@ -19,7 +22,32 @@ StlObject::StlObject(QString fileName, QObject *parent) :
     this->selected=false;
     this->colliding=false;
     this->nonManifold=false;
+    this->mirrorX=false;
+    this->mirrorY=false;
+    this->mirrorZ=false;
     this->loadFile(fileName);
+}
+void StlObject::copy(StlObject *copyFrom){
+    qDebug() << copyFrom->fileName;
+    this->scaleValue=copyFrom->scaleValue;
+    this->rotation=copyFrom->rotation;
+    this->selected=false;
+    this->colliding=false;
+    this->nonManifold=copyFrom->nonManifold;
+
+    this->vertexes=copyFrom->vertexes;
+    this->faces=copyFrom->faces;
+    this->edges=copyFrom->edges;
+
+    this->width=copyFrom->width;
+    this->height=copyFrom->height;
+    this->lenght=copyFrom->lenght;
+    this->fileName=copyFrom->fileName;
+    this->offset=copyFrom->offset;
+
+    this->mirrorX=copyFrom->mirrorX;
+    this->mirrorY=copyFrom->mirrorY;
+    this->mirrorZ=copyFrom->mirrorZ;
 }
 
 void StlObject::loadFile(QString fileName){
@@ -192,6 +220,8 @@ void StlObject::loadFile(QString fileName){
             i.value()->setZ((i.value()->z()-this->offset.z())*0.01);
         }
         this->height=(zMax-zMin)*0.01;
+        this->width=(xMax-xMin)*0.01;
+        this->lenght=(yMax-yMin)*0.01;
         this->offset.setZ(0);
         this->offset = this->offset*0.01;
 
@@ -346,7 +376,10 @@ void StlObject::draw(bool picking){
         }
     }
     glPushMatrix();
-    glTranslatef(0.0+this->offset.x(), 0.0+this->offset.y(), 0.0);
+    glTranslatef(0.0+this->offset.x(), 0.0+this->offset.y(), (this->mirrorZ ? getHeight(): 0.0));
+
+    glScalef( (this->mirrorX ? -1.0 : 1.0), (this->mirrorY ? -1.0 : 1.0), (this->mirrorZ ? -1.0 : 1.0) );
+
     glRotatef(((int)this->rotation/5)*5, 0.0, 0.0, 1.0);
     glBegin(GL_TRIANGLES);
     for(i = this->faces.begin(); i != this->faces.end(); ++i){
@@ -381,44 +414,40 @@ void StlObject::draw(bool picking){
 
 
 void StlObject::mirror(QChar axis){
-    QMatrix4x4 matrix;
-    Vertex offset;
     switch(axis.toAscii()){
     case 'x':
-        offset = Vertex(0,0,0);
-        matrix.scale(-1.0,1.0,1.0);
+        this->mirrorX=!this->mirrorX;
         break;
     case 'y':
-        offset = Vertex(0,0,0);
-        matrix.scale(1.0,-1.0,1.0);
+        this->mirrorY=!this->mirrorY;
         break;
     case 'z':
-        offset = Vertex(0,0,this->height);
-        matrix.scale(1.0,1.0,-1.0);
+        this->mirrorZ=!this->mirrorZ;
         break;
-    }
-    //zamien rotacje vertexow robiaz zamiane v2 i v3 powinno dzialac
-    //transform verteces
-    QHash<QString, Vertex*>::iterator i;
-    for(i = this->vertexes.begin(); i != this->vertexes.end(); ++i){
-        *i.value()=((*i.value()*matrix)+offset);
-    }
-    QHash<QString, Face*>::iterator j;
-    for(j = this->faces.begin(); j != this->faces.end(); ++j){
-       j.value()->flip();
     }
 }
 
 QList<QVector3D> StlObject::getTriangles(){
     QList<QVector3D> out;
     QMatrix4x4 matrix;
+    QVector3D zOffset(0,0,(this->mirrorZ ? getHeight()*100 : 0.0));
+
     matrix.rotate(360-((((int)this->rotation/5)*5)%360),0.0f,0.0f,1.0f);
+    matrix.scale((this->mirrorX ? -1.0 : 1.0), (this->mirrorY ? -1.0 : 1.0), (this->mirrorZ ? -1.0 : 1.0));
     QHash<QString, Face*>::iterator j;
     for(j = this->faces.begin(); j != this->faces.end(); ++j){
         out.append((((*j.value()->getNormal())*matrix)));
-        out.append((((*j.value()->getEdge1()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100);
-        out.append((((*j.value()->getEdge2()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100);
-        out.append((((*j.value()->getEdge3()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100);
+        //if mirror change vertex winding order
+        if(this->mirrorX ^ this->mirrorY ^ this->mirrorZ){
+            out.append((((*j.value()->getEdge3()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge2()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge1()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+        }
+        else{
+            out.append((((*j.value()->getEdge1()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge2()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge3()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+        }
     }
     return out;
 }
@@ -582,4 +611,8 @@ QList<HalfEdge*> StlObject::intersectLists(QList<HalfEdge *> list1, QList<HalfEd
 double StlObject::angle(QVector3D p1, QVector3D p2){
     qDebug() << p1 << p2;
     return (acos(QVector3D::dotProduct(p1.normalized(),p2.normalized()))*(double)180)/3.14159;
+}
+
+QString StlObject::getFileName(){
+    return this->fileName;
 }
