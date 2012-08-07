@@ -202,9 +202,8 @@ void MainWindow::loadFile(QString fileName){
         //clear gl widget
         ui->glWidget->clearObjects();
         //show progress dialog
-        QProgressDialog progress(tr("Parsing file"), 0, 0, 0, this);
-        progress.setWindowModality(Qt::WindowModal);
-        progress.show();
+        ui->progressBar->show();
+        ui->progressBar->setFormat(tr("Parsing file"));
 
         //buffer filecontent
         this->fileContent.clear();
@@ -215,7 +214,7 @@ void MainWindow::loadFile(QString fileName){
         QStringList gcodesTemp=this->fileContent.split("\n");
         QString temp;
         //set max value of progress dialog
-        progress.setMaximum(gcodesTemp.size());
+        ui->progressBar->setMaximum(gcodesTemp.size());
 
         //parsing input file
         qreal x=0,y=0,z=-1, travel=0;
@@ -223,7 +222,9 @@ void MainWindow::loadFile(QString fileName){
         int layerCount=0;
         float prevZ=0;
         for(int i=0; i<gcodesTemp.size(); i++){
-            progress.setValue(i);
+            ui->progressBar->setValue(i);
+            //refresh ui
+            qApp->processEvents();
             temp=gcodesTemp.at(i);
             temp.replace("/n","");
             if(temp.contains("filament used")){
@@ -262,6 +263,7 @@ void MainWindow::loadFile(QString fileName){
         ui->layerScrollBar->setMaximum(layerCount+1);
         ui->layerScrollBar->setValue(1);
         ui->currentLayer->setText(QString::number(layerCount)+"/"+QString::number(layerCount));
+        ui->progressBar->hide();
 
         ui->progressBar->setMaximum(this->gcodeLines.size());
         ui->progressBar->setValue(0);
