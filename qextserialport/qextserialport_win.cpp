@@ -37,16 +37,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QRegExp>
 #include <QtCore/QMetaType>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#  include <QtCore/QWinEventNotifier>
-#  define WinEventNotifier QWinEventNotifier
-#elif !defined(QESP_NO_QT4_PRIVATE)
-#  include <QtCore/private/qwineventnotifier_p.h>
-#  define WinEventNotifier QWinEventNotifier
-#else
-#  include "qextwineventnotifier_p.h"
-#  define WinEventNotifier QextWinEventNotifier
-#endif
+#include <QtCore/private/qwineventnotifier_p.h>
+#define WinEventNotifier QWinEventNotifier
 void QextSerialPortPrivate::platformSpecificInit()
 {
     Win_Handle=INVALID_HANDLE_VALUE;

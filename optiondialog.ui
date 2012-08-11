@@ -113,24 +113,36 @@
       <item row="2" column="1" colspan="2">
        <widget class="QLineEdit" name="outputDir"/>
       </item>
-      <item row="2" column="3">
-       <widget class="QPushButton" name="outputDirBtn">
+      <item row="0" column="3">
+       <widget class="QToolButton" name="slicerDirBtn">
         <property name="text">
          <string>Dir</string>
+        </property>
+        <property name="icon">
+         <iconset resource="resource.qrc">
+          <normaloff>:/imgs/icons/open.png</normaloff>:/imgs/icons/open.png</iconset>
         </property>
        </widget>
       </item>
       <item row="1" column="3">
-       <widget class="QPushButton" name="configDirBtn">
+       <widget class="QToolButton" name="configDirBtn">
         <property name="text">
          <string>Dir</string>
         </property>
+        <property name="icon">
+         <iconset resource="resource.qrc">
+          <normaloff>:/imgs/icons/open.png</normaloff>:/imgs/icons/open.png</iconset>
+        </property>
        </widget>
       </item>
-      <item row="0" column="3">
-       <widget class="QPushButton" name="slicerDirBtn">
+      <item row="2" column="3">
+       <widget class="QToolButton" name="outputDirBtn">
         <property name="text">
          <string>Dir</string>
+        </property>
+        <property name="icon">
+         <iconset resource="resource.qrc">
+          <normaloff>:/imgs/icons/open.png</normaloff>:/imgs/icons/open.png</iconset>
         </property>
        </widget>
       </item>
@@ -187,6 +199,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -3,8 +3,8 @@
 
 #include <QObject>
 #include <QtOpenGL>
-//#include <GL/glut.h>
 #include <GL/gl.h>
+#include <GL/glu.h>
 #include <QVector3D>
 #include <QHash>
 #include <QCryptographicHash>
@@ -54,6 +54,8 @@ private:
     bool mirrorX;
     bool mirrorY;
     bool mirrorZ;
+    int list_index;
+    bool preSelected;
     //object description
 
     //list of verteces
@@ -72,7 +74,8 @@ private:
     Face* addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3);
     //just a helper function
     QList<HalfEdge*> intersectLists(QList<HalfEdge*> list1, QList<HalfEdge*> list2);
-
+    //make gl list
+    void render();
     //calculating angle beetwen two QVector3D
     double angle(QVector3D p1, QVector3D p2);
 public:
@@ -83,6 +86,7 @@ public:
     void select(bool);
     void moveXY(double x, double y);
     void rotate(double angle);
+    void setRotation(double angle);
     void scale(double value);
     void loadFile(QString fileName);
     QVector3D getOffset();
@@ -97,6 +101,9 @@ public:
     inline double getWidth(){ return width*scaleValue; }
     inline double getLenght(){ return lenght*scaleValue; }
     inline double getHeight(){ return height*scaleValue; }
+    inline bool isMirrored() { return mirrorX^mirrorY; }
+    inline bool isSelected() { return selected; }
+    void freeList();
 signals:
     void progress(int value, int max, QString text);
     void doneProcessing(bool);

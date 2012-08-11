@@ -97,6 +97,9 @@ private slots:
     void printFinished(bool);
     void on_fineUpZBtn_clicked();
     void on_fineDownZBtn_clicked();
+    void on_homeZ_clicked();
+    void on_corseUpZBtn_clicked();
+    void on_corseDownZBtn_clicked();
 };
 
 #endif // MAINWINDOW_H

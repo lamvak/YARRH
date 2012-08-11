@@ -1,21 +1,22 @@
 #include "slicedialog.h"
 #include "ui_slicedialog.h"
 
-SliceDialog::SliceDialog(QWidget *parent) :
+SliceDialog::SliceDialog(const QGLWidget * shareWidget, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SliceDialog)
 {
     ui->setupUi(this);
-    this->stlView = new StlView(ui->stlViewWidget);
+    this->stlView = new StlView(ui->stlViewWidget,shareWidget);
     ui->stlViewWidget->layout()->addWidget(this->stlView);
-    connect(this->stlView, SIGNAL(objectPicked(bool)), ui->objectOptionGroup, SLOT(setEnabled(bool)));
-    connect(this->stlView, SIGNAL(objectPicked(bool)), ui->removeBtn, SLOT(setEnabled(bool)));
     connect(this->stlView, SIGNAL(selectedRotation(int)), this, SLOT(objectRotated(int)));
     connect(this->stlView, SIGNAL(selectedScale(int)), this, SLOT(objectScaled(int)));
     connect(this->stlView, SIGNAL(progress(int,int,QString)), this, SLOT(updateProgress(int,int,QString)));
-    connect(this->stlView, SIGNAL(doneProcessing(bool)),ui->progressBar,SLOT(setHidden(bool)));
-
+    connect(this->stlView, SIGNAL(doneProcessing(bool)),this,SLOT(processingFinished(bool)));
     connect(this->stlView, SIGNAL(selectedCors(QPointF)), this, SLOT(setOffset(QPointF)));
+
+    connect(ui->camFrontBtn, SIGNAL(clicked()), this->stlView, SLOT(viewFront()));
+    connect(ui->camSideBtn, SIGNAL(clicked()), this->stlView, SLOT(viewSide()));
+    connect(ui->camTopBtn, SIGNAL(clicked()), this->stlView, SLOT(viewTop()));
 
     connect(ui->rotationsSpinBox, SIGNAL(valueChanged(int)), this, SLOT(rotateObject(int)));
     connect(ui->scaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(scaleObject(int)));
@@ -23,13 +24,12 @@ SliceDialog::SliceDialog(QWidget *parent) :
     connect(ui->ySpinBox, SIGNAL(valueChanged(double)), this, SLOT(moveObjectY(double)));
     connect(this->stlView, SIGNAL(nonManifold(QString)), this, SLOT(nonManifold(QString)));
     ui->consoleGroup->hide();
-    ui->objectOptionGroup->setEnabled(false);
-    ui->removeBtn->setEnabled(false);
     ui->progressBar->hide();
 
     QMovie *movie = new QMovie(":/imgs/loader.gif");
     ui->loaderLabel->setMovie(movie);
     movie->start();
+    this->lastRot=ui->rotationsSpinBox->value();
 }
 
 void SliceDialog::setOffset(QPointF point){
@@ -38,7 +38,12 @@ void SliceDialog::setOffset(QPointF point){
     ui->xSpinBox->blockSignals(false);
     ui->ySpinBox->blockSignals(true);
     ui->ySpinBox->setValue(point.y()*10);
-    ui->ySpinBox->blockSignals(false);
+    ui->ySpinBox->blockSignals(false); 
+}
+
+void SliceDialog::updateStlView(){
+    this->stlView->updateGL();
+    this->stlView->repaint();
 }
 
 void SliceDialog::moveObjectX(double x){
@@ -50,12 +55,13 @@ void SliceDialog::moveObjectY(double y){
 }
 
 void SliceDialog::rotateObject(int ang){
-    this->stlView->rotateObject((double)(360-ang));
+    this->stlView->rotateObject((double)(this->lastRot-ang));
 }
 
 void SliceDialog::objectRotated(int ang){
     ui->rotationsSpinBox->blockSignals(true);
     ui->rotationsSpinBox->setValue(ang);
+    this->lastRot=ui->rotationsSpinBox->value();
     ui->rotationsSpinBox->blockSignals(false);
 }
 
@@ -66,7 +72,7 @@ void SliceDialog::objectScaled(int scale){
 }
 
 void SliceDialog::scaleObject(int scale){
-    this->stlView->scaleObject((double)scale/100);
+    this->stlView->scaleObject(((double)scale/100));
 }
 
 void SliceDialog::nonManifold(QString name){
@@ -94,7 +100,7 @@ void SliceDialog::setLastDir(QString dir){
 }
 
 void SliceDialog::clearObjects(){
-    this->stlView->removeObject();
+    this->stlView->clearObjects();
 }
 
 void SliceDialog::addObject(QString file){
@@ -141,7 +147,6 @@ void SliceDialog::on_sliceBtn_clicked()
         arguments.append(QString::number(ui->layerHeight->value()));
         arguments.append("--fill-density");
         arguments.append(QString::number((double)ui->fillDensity->value()/100));
-        qDebug() << arguments;
         this->slicerProcess = new QProcess(this);
         connect(this->slicerProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(updateStatus()));
         connect(this->slicerProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(slicingFinished(int,QProcess::ExitStatus)));
@@ -151,7 +156,6 @@ void SliceDialog::on_sliceBtn_clicked()
 }
 
 void SliceDialog::slicingFinished(int exitCode, QProcess::ExitStatus exitStatus){
-    qDebug() << "ok" << exitCode;
     delete this->slicerProcess;
     emit fileSliced(this->outputFile);
     ui->consoleGroup->hide();
@@ -160,7 +164,6 @@ void SliceDialog::slicingFinished(int exitCode, QProcess::ExitStatus exitStatus)
 }
 
 void SliceDialog::updateStatus(){
-    //qDebug() << this->slicerProcess->readAllStandardOutput().trimmed();
     ui->console->appendPlainText(this->slicerProcess->readAllStandardOutput().trimmed());
 }
 
@@ -168,11 +171,6 @@ void SliceDialog::setTableSize(int x, int y){
     this->stlView->setTableSize(x,y);
     this->xSize=x;
     this->ySize=y;
-}
-
-void SliceDialog::on_removeBtn_clicked()
-{
-    this->stlView->removeObject();
 }
 
 QString SliceDialog::saveStl(QString fileName)
@@ -230,7 +228,6 @@ QString SliceDialog::saveStl(QString fileName)
         }
         QRectF rect(QPointF(xMin,yMax),QPointF(xMax,yMin));
         this->printCenter=rect.center().toPoint();
-        qDebug() << xMax << xMin << yMax << yMin;
         file->close();
     }
     ui->progressBar->hide();
@@ -249,26 +246,6 @@ void SliceDialog::on_confCombo_currentIndexChanged(const QString &arg1)
     ui->layerHeight->setValue(settings.value("layer_height").toDouble());
 }
 
-void SliceDialog::on_mirrorXBtn_clicked()
-{
-    this->stlView->mirrorObject('x');
-}
-
-void SliceDialog::on_mirrorYBtn_clicked()
-{
-    this->stlView->mirrorObject('y');
-}
-
-void SliceDialog::on_mirrorZBtn_clicked()
-{
-   this->stlView->mirrorObject('z');
-}
-
-void SliceDialog::on_repeairNormals_clicked()
-{
-     this->stlView->repeairObjectNormals();
-}
-
 void SliceDialog::updateProgress(int value, int max, QString text){
     if(ui->progressBar->isHidden()){
         ui->progressBar->show();
@@ -278,20 +255,60 @@ void SliceDialog::updateProgress(int value, int max, QString text){
     ui->progressBar->setValue(value);
     ui->progressBar->setFormat(text);
     qApp->processEvents();
+    this->setCursor(Qt::BusyCursor);
 }
 
-void SliceDialog::on_repairHoles_clicked()
-{
-   this->stlView->repeairObjectHoles();
+void SliceDialog::processingFinished(bool){
+    ui->progressBar->hide();
+    this->setCursor(Qt::ArrowCursor);
 }
 
-void SliceDialog::on_duplicateBtn_clicked()
+void SliceDialog::on_selectTool_clicked()
 {
-    this->stlView->duplicateObject();
+    this->stlView->setActiveTool(StlView::SELECT);
 }
 
-void SliceDialog::on_mToCenterBtn_clicked()
+void SliceDialog::on_delTool_clicked()
 {
-    //this->stlView->getObject(this->selectedObject)->moveXY(((double)this->xSize/2)*0.1,((double)this->ySize/2)*0.1);
-    this->stlView->update();
+    this->stlView->setActiveTool(StlView::REMOVE);
+}
+
+void SliceDialog::on_moveTool_clicked()
+{
+   this->stlView->setActiveTool(StlView::MOVE);
+}
+
+void SliceDialog::on_rotateTool_clicked()
+{
+    this->stlView->setActiveTool(StlView::ROTATE);
+}
+
+void SliceDialog::on_toolButton_clicked()
+{
+    this->stlView->setActiveTool(StlView::SCALE);
+}
+
+void SliceDialog::on_centerTool_clicked()
+{
+    this->stlView->setActiveTool(StlView::CENTER);
+}
+
+void SliceDialog::on_cloneTool_clicked()
+{
+    this->stlView->setActiveTool(StlView::COPY);
+}
+
+void SliceDialog::on_mirrorTool_clicked()
+{
+    this->stlView->setActiveTool(StlView::MIRROR);
+}
+
+void SliceDialog::on_boxTool_clicked()
+{
+    this->stlView->setActiveTool(StlView::BOX_SELECT);
+}
+
+void SliceDialog::on_repairTool_clicked()
+{
+   this->stlView->setActiveTool(StlView::REPAIR);
 }

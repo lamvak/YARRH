@@ -20,7 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->optionDialog->hide();
     this->optionDialog->move(this->geometry().center()-this->optionDialog->geometry().center());
     //slice dialog
-    this->sliceDialog = new SliceDialog();
+    this->sliceDialog = new SliceDialog(ui->glWidget, this);
     this->sliceDialog->hide();
     this->sliceDialog->move(this->geometry().center()-this->sliceDialog->geometry().center());
     connect(this->optionDialog, SIGNAL(slicerPathChanged(QString)), this->sliceDialog, SLOT(updateSlicerPath(QString)));
@@ -30,7 +30,6 @@ MainWindow::MainWindow(QWidget *parent) :
     //set version number
     this->setWindowTitle("YARRH v"+QString::number(VERSION_MAJOR)+"."+QString::number(VERSION_MINOR)+"."+QString::number(VERSION_REVISION));
     this->aboutWindow->setVersion(VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
-
     //setting up printer and its thread
     this->printerObj = new Printer();
     QThread *qthread = new QThread();
@@ -132,6 +131,7 @@ void MainWindow::printerConnected(bool connected){
     //connecting to printer port
     if(connected){
             ui->connectBtn->setText(tr("Disconnect"));
+            ui->connectBtn->setIcon(QIcon(":/imgs/icons/disconnect.png"));
             ui->axisControlGroup->setDisabled(false);
             ui->headControlWidget->hidePoints(false);
             ui->temperatureGroupBox->setDisabled(false);
@@ -156,7 +156,7 @@ void MainWindow::printerConnected(bool connected){
     }
     else{
         ui->connectBtn->setText(tr("Connect"));
-
+        ui->connectBtn->setIcon(QIcon(":/imgs/icons/connect.png"));
         ui->connectBtn->blockSignals(true);
         ui->connectBtn->setChecked(false);
         ui->connectBtn->blockSignals(false);
@@ -180,10 +180,13 @@ void MainWindow::loadFile(QString fileName){
     }
     // if its stl then open slice window
     if(fileName.endsWith(".stl",Qt::CaseInsensitive)){
-        this->sliceDialog->updateConfigs(this->optionDialog->getConfigDir());
         this->sliceDialog->move(QPoint(this->geometry().center().x()-this->sliceDialog->width()/2,this->geometry().center().y()-this->sliceDialog->height()/2));
         this->sliceDialog->show();
-        this->sliceDialog->clearObjects();
+        this->sliceDialog->updateStlView();
+        this->sliceDialog->updateConfigs(this->optionDialog->getConfigDir());
+        //this->sliceDialog->clearObjects();
+
+
         this->sliceDialog->addObject(fileName);
     }
     //else just load gcode
@@ -282,6 +285,7 @@ void MainWindow::loadFile(QString fileName){
         ui->pauseBtn->blockSignals(false);
         ui->progressBar->hide();
         ui->pauseBtn->setText(tr("Pause"));
+        ui->pauseBtn->setIcon(QIcon(":/imgs/icons/pause.png"));
         this->currentLayer=0;
         this->lastZ=0;
         ui->glWidget->setCurrentLayer(0);
@@ -305,7 +309,7 @@ void MainWindow::on_printBtn_clicked(){
 
         ui->pauseBtn->blockSignals(false);
         ui->pauseBtn->setText(tr("Pause"));
-
+        ui->pauseBtn->setIcon(QIcon(":/imgs/icons/pause.png"));
         ui->printBtn->setEnabled(false);
         ui->progressBar->show();
         this->calibrateDialog->setDisabled(true);
@@ -318,6 +322,7 @@ void MainWindow::on_printBtn_clicked(){
         ui->glWidget->setCurrentLayer(this->currentLayer);
         ui->headControlWidget->resetLayer();
         ui->printBtn->setText(tr("Restart"));
+        ui->printBtn->setIcon(QIcon(":/imgs/icons/reload.png"));
     }
 }
 
@@ -329,7 +334,7 @@ void MainWindow::on_layerScrollBar_valueChanged(int layers){
 
 //slot to connect diffrent signals
 void MainWindow::moveHead(QPoint point){
-    QMetaObject::invokeMethod(printerObj,"moveHead",Qt::QueuedConnection,Q_ARG(QPoint, QPoint(point.x(),this->optionDialog->getSize().y()*10-point.y())),Q_ARG(int, ui->speedSpinBox->value()));
+    QMetaObject::invokeMethod(printerObj,"moveHead",Qt::QueuedConnection,Q_ARG(QPoint, QPoint(point.x(),this->optionDialog->getSize().y()*10-point.y())),Q_ARG(int, ui->speedSpinBox->value()*60));
     ui->yAt->setText("Y: "+QString::number(this->optionDialog->getSize().y()*10-point.y()));
     ui->xAt->setText("X: "+QString::number(point.x()));
 }
@@ -339,10 +344,12 @@ void MainWindow::moveHead(QPoint point){
 void MainWindow::on_pauseBtn_toggled(bool pause){
     if(pause){
         ui->pauseBtn->setText(tr("Resume"));
+        ui->pauseBtn->setIcon(QIcon(":/imgs/icons/resume.png"));
         QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
     }
     else{
         ui->pauseBtn->setText(tr("Pause"));
+        ui->pauseBtn->setIcon(QIcon(":/imgs/icons/pause.png"));
         QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
     }
     ui->axisControlGroup->setDisabled(!pause);
@@ -355,8 +362,8 @@ void MainWindow::on_pauseBtn_toggled(bool pause){
 
 void MainWindow::drawTemp(double t1, double t2, double hb){
     ui->tempGraphWidget->addMeasurment(t1,t2,hb,QDateTime::currentMSecsSinceEpoch()/1000);
-    ui->t1Label->setText(QString::number(t1)+" Â°C");
-    ui->t3Label->setText(QString::number(hb)+" Â°C");
+    ui->t1Label->setText(QString::number(t1)+" °C");
+    ui->t3Label->setText(QString::number(hb)+" °C");
 }
 
 //update print progress
@@ -445,7 +452,6 @@ void MainWindow::setTemp1FromGcode(double value){
 }
 
 void MainWindow::setTemp3FromGcode(double value){
-    qDebug() << value;
     ui->tempGraphWidget->setTargets(-1,-1,value);
     if(value>0){
         ui->hbBtn->blockSignals(true);
@@ -462,7 +468,7 @@ void MainWindow::setTemp3FromGcode(double value){
 }
 void MainWindow::moveZ(int value){
     ui->zMoveTo->setText("Z: "+QString::number(0));
-    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)value),Q_ARG(int, ui->speedZSpinBox->value()), Q_ARG(bool, false));
+    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)value),Q_ARG(int, ui->speedZSpinBox->value()*60), Q_ARG(bool, false));
 }
 
 void MainWindow::updateZ(int value){
@@ -519,8 +525,8 @@ void MainWindow::saveSettings(){
     QSettings settings("3d-printers", "yarrh");
     settings.clear();
     settings.setValue("lastDir", this->lastOpendDir);
-    settings.setValue("XYspeed",ui->speedSpinBox->value());
-    settings.setValue("Zspeed",ui->speedZSpinBox->value());
+    settings.setValue("XYspeed",ui->speedSpinBox->value()*60);
+    settings.setValue("Zspeed",ui->speedZSpinBox->value()*60);
     settings.setValue("mainWindowPos", this->pos());
     settings.setValue("mainWindowSize",this->size());
     settings.setValue("baudRateSelected", ui->baudCombo->currentIndex());
@@ -568,9 +574,14 @@ void MainWindow::restoreSettings(){
     QSettings settings("3d-printers", "yarrh");
     this->lastOpendDir = settings.value("lastDir","").toString();
     this->sliceDialog->setLastDir(this->lastOpendDir);
-    ui->speedSpinBox->setValue(settings.value("XYspeed").toInt());
-    ui->speedZSpinBox->setValue(settings.value("Zspeed").toInt());
-    this->move(settings.value("mainWindowPos").toPoint());
+    ui->speedSpinBox->setValue(settings.value("XYspeed").toInt()/60);
+    ui->speedZSpinBox->setValue(settings.value("Zspeed").toInt()/60);
+    if(settings.value("mainWindowPos").toPoint().x()>QApplication::desktop()->screenGeometry().bottomRight().y() ^ settings.value("mainWindowPos").toPoint().x()>QApplication::desktop()->screenGeometry().bottomRight().y()){
+        this->move(QPoint(0,0));
+    }
+    else{
+        this->move(settings.value("mainWindowPos").toPoint());
+    }
     this->resize(settings.value("mainWindowSize").toSize());
     ui->baudCombo->setCurrentIndex(settings.value("baudRateSelected").toInt());
     ui->groupBox_2->setChecked(settings.value("showConsole").toBool());
@@ -703,20 +714,45 @@ void MainWindow::updatadeSize(QVector3D newSize){
 
 void MainWindow::printFinished(bool value){
     if(value){
-        qDebug() << "koniec";
         ui->pauseBtn->setEnabled(false);
         ui->printBtn->setEnabled(true);
         ui->progressBar->setHidden(true);
         ui->printBtn->setText(tr("Print"));
+        ui->printBtn->setIcon(QIcon(":/imgs/icons/print.png"));
     }
 }
 
 void MainWindow::on_fineUpZBtn_clicked()
 {
-   QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)0.1),Q_ARG(int, ui->speedZSpinBox->value()), Q_ARG(bool, true));
+   QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)0.1),Q_ARG(int, ui->speedZSpinBox->value()*60), Q_ARG(bool, true));
 }
 
 void MainWindow::on_fineDownZBtn_clicked()
 {
-    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)-0.1),Q_ARG(int, ui->speedZSpinBox->value()), Q_ARG(bool, true));
+    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)-0.1),Q_ARG(int, ui->speedZSpinBox->value()*60), Q_ARG(bool, true));
+}
+
+void MainWindow::on_homeZ_clicked()
+{
+    QMetaObject::invokeMethod(printerObj,"homeZ",Qt::QueuedConnection);
+    ui->zSlider->blockSignals(true);
+    ui->zSlider->setValue(0);
+    ui->zSlider->blockSignals(false);
+
+}
+
+void MainWindow::on_corseUpZBtn_clicked()
+{
+    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)1.0),Q_ARG(int, ui->speedZSpinBox->value()*60), Q_ARG(bool, true));
+    ui->zSlider->blockSignals(true);
+    ui->zSlider->setValue(ui->zSlider->value()+1);
+    ui->zSlider->blockSignals(false);
+}
+
+void MainWindow::on_corseDownZBtn_clicked()
+{
+    QMetaObject::invokeMethod(printerObj,"moveHeadZ",Qt::QueuedConnection,Q_ARG(double, (double)-1.0),Q_ARG(int, ui->speedZSpinBox->value()*60), Q_ARG(bool, true));
+    ui->zSlider->blockSignals(true);
+    ui->zSlider->setValue(ui->zSlider->value()-1);
+    ui->zSlider->blockSignals(false);
 }

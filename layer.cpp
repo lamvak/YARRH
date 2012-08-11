@@ -93,6 +93,7 @@ void Layer::render(float scale){
     //generate model list
     GLuint index = glGenLists(2);
     this->list_index=index;
+    qDebug() << this->list_index;
     // compile the display list, store a triangle in it
     glNewList(index, GL_COMPILE);
 

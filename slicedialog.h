@@ -17,7 +17,7 @@ class SliceDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit SliceDialog(QWidget *parent = 0);
+    explicit SliceDialog(const QGLWidget * shareWidget = 0, QWidget *parent = 0);
     ~SliceDialog();
     void clearObjects();
     void setLastDir(QString dir);
@@ -26,7 +26,8 @@ public slots:
     void addObject(QString file="");
     void updateConfigs(QString dir);
     void updateSlicerPath(QString path);
-    void updateOutputPath(QString path);   
+    void updateOutputPath(QString path);
+    void updateStlView();
 private slots:
     void on_addBtn_clicked();
     void on_sliceBtn_clicked();
@@ -41,24 +42,32 @@ private slots:
     void moveObjectY(double);
 
     void nonManifold(QString name);
-    void on_removeBtn_clicked();
     void on_exportStlBtn_clicked();
     void on_confCombo_currentIndexChanged(const QString &arg1);
 
-    void on_mirrorXBtn_clicked();
-
-    void on_mirrorYBtn_clicked();
-
-    void on_mirrorZBtn_clicked();
-
-    void on_repeairNormals_clicked();
-
     void updateProgress(int value, int max, QString text);
-    void on_repairHoles_clicked();
 
-    void on_duplicateBtn_clicked();
+    void on_selectTool_clicked();
 
-    void on_mToCenterBtn_clicked();
+    void on_delTool_clicked();
+
+    void on_moveTool_clicked();
+
+    void on_rotateTool_clicked();
+
+    void on_toolButton_clicked();
+
+    void processingFinished(bool);
+
+    void on_centerTool_clicked();
+
+    void on_cloneTool_clicked();
+
+    void on_mirrorTool_clicked();
+
+    void on_boxTool_clicked();
+
+    void on_repairTool_clicked();
 
 private:
     Ui::SliceDialog *ui;
@@ -73,6 +82,7 @@ private:
     QProcess *slicerProcess;
     StlView *stlView;
     QString saveStl(QString fileName);
+    int lastRot;
 signals:
     void fileSliced(QString);
 };

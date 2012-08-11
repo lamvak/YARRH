@@ -12,7 +12,7 @@
 
 //constructor
 GlWidget::GlWidget(QWidget *parent)
-    : QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
+    : QGLWidget(parent)
 {
     theta=90;
     phi=90;
@@ -34,6 +34,7 @@ GlWidget::GlWidget(QWidget *parent)
     show_travel=false;
     qtGreen = QColor::fromCmykF(0.40, 0.0, 1.0, 0.0);
     qtPurple = QColor::fromCmykF(0.39, 0.39, 0.0, 0.0);
+    this->setFormat(QGLFormat(QGL::SampleBuffers));
 }
 
 

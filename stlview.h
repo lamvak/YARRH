@@ -5,6 +5,7 @@
 #include <GL/glu.h>
 #include <GL/gl.h>
 #include <QtOpenGL>
+#include <QRect>
 #include <btBulletDynamicsCommon.h>
 #include "stlobject.h"
 
@@ -12,13 +13,27 @@ class StlView : public QGLWidget
 {
     Q_OBJECT
 public:
-    StlView(QWidget *parent);
+    StlView(QWidget *parent = 0,const QGLWidget * shareWidget = 0);
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
     QString addObject(QString fileName);
     QString addObject(StlObject *object);
     void setTableSize(int x, int y);
     QStringList getColorsList();
+    ///tool enum
+    enum tools{
+        SELECT = 0,
+        MOVE = 1,
+        SCALE = 2,
+        ROTATE = 3,
+        REMOVE = 4,
+        CENTER = 5,
+        COPY = 6,
+        MIRROR = 7,
+        REPAIR = 8,
+        BOX_SELECT = 9
+    };
+
 signals:
     void objectPicked(bool);
     void selectedRotation(int);
@@ -30,8 +45,7 @@ signals:
     void doneProcessing(bool);
 public slots:
     void selectObject(QString);
-    void repeairObjectNormals();
-    void repeairObjectHoles();
+    void repairObject();
     StlObject* getObject(QString);
     void removeObject();
     void rotateObject(double);
@@ -39,6 +53,16 @@ public slots:
     void moveObject(QPointF);
     void mirrorObject(QChar axis);
     void duplicateObject();
+    void viewTop();
+    void viewFront();
+    void viewSide();
+    void centerCamera();
+    void updateBoxCords();
+    void clearObjects();
+    void setActiveTool(int tool);
+    void mirrorX();
+    void mirrorY();
+    void mirrorZ();
 protected:
     void initializeGL();
     void paintGL();
@@ -48,7 +72,14 @@ protected:
     void mouseReleaseEvent(QMouseEvent *);
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent * event);
+    void keyPressEvent (QKeyEvent * event);
 private:
+    QMenu* mirrorMenu;
+    QAction* mirrorXAction;
+    QAction* mirrorYAction;
+    QAction* mirrorZAction;
+    int activeTool;
+    int previousTool;
     GLfloat eyeX,eyeY,eyeZ;
     GLfloat upX,upY,upZ;
     GLfloat theta,phi;
@@ -70,9 +101,18 @@ private:
     void drawAxis();
     void drawGrid();
     QHash<QString, StlObject*> objects;
-
     QPointF screenToWorld(int x, int y);
-
+    QList<QVector3D> getSelectedObjectsCords();
+    QList<QVector3D> oryginalCenters;
+    double originalScale;
+    QList<double> oryginalScales;
+    QList<double> getScales();
+    bool drawBox;
+    QPointF selectionBoxP1;
+    QPointF selectionBoxP2;
+    QTimer* boxUpdater;
+    void drawSelectionBox();
+    bool allMirrored();
     //getting ready to use bullet physics engine
 //    btCollisionWorld* collisionWorld;
 //    btDefaultCollisionConfiguration* collisionConfiguration;

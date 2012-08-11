@@ -2,7 +2,27 @@
     <qresource prefix="/">
         <file>imgs/donate.gif</file>
         <file>imgs/loader.gif</file>
-        <file>yarrh_en.qm</file>
+        <file>imgs/icons/drag.png</file>
+        <file>imgs/icons/delete.png</file>
+        <file>imgs/icons/rotate.png</file>
+        <file>imgs/icons/repair.png</file>
+        <file>imgs/icons/print.png</file>
+        <file>imgs/icons/resume.png</file>
+        <file>imgs/icons/pause.png</file>
+        <file>imgs/icons/reload.png</file>
+        <file>imgs/icons/open.png</file>
+        <file>imgs/icons/connect.png</file>
+        <file>imgs/icons/connectErr.png</file>
+        <file>imgs/icons/disconnect.png</file>
+        <file>imgs/icons/cursor.png</file>
+        <file>imgs/icons/scale.png</file>
+        <file>imgs/icons/cube.png</file>
+        <file>imgs/icons/layers.png</file>
+        <file>imgs/icons/center.png</file>
+        <file>imgs/icons/stamp.png</file>
+        <file>imgs/icons/mirror.png</file>
+        <file>imgs/icons/boxselect.png</file>
         <file>yarrh_pl.qm</file>
+        <file>yarrh_en.qm</file>
     </qresource>
 </RCC>

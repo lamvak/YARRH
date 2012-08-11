@@ -27,6 +27,7 @@ StlObject::StlObject(QString fileName, QObject *parent) :
     this->mirrorZ=false;
     this->loadFile(fileName);
 }
+
 void StlObject::copy(StlObject *copyFrom){
     qDebug() << copyFrom->fileName;
     this->scaleValue=copyFrom->scaleValue;
@@ -48,9 +49,11 @@ void StlObject::copy(StlObject *copyFrom){
     this->mirrorX=copyFrom->mirrorX;
     this->mirrorY=copyFrom->mirrorY;
     this->mirrorZ=copyFrom->mirrorZ;
+    this->list_index=copyFrom->list_index;
 }
 
 void StlObject::loadFile(QString fileName){
+
     QTime myTimer;
     bool badNormals;
     myTimer.start();
@@ -98,7 +101,6 @@ void StlObject::loadFile(QString fileName){
                 z2=line.split(" ",QString::SkipEmptyParts).at(3).toFloat();
                 line=file->readLine();
                 line.remove("\r");
-                qDebug() << line;
                 x3=line.split(" ",QString::SkipEmptyParts).at(1).toFloat();
                 y3=line.split(" ",QString::SkipEmptyParts).at(2).toFloat();
                 z3=line.split(" ",QString::SkipEmptyParts).at(3).toFloat();
@@ -132,7 +134,7 @@ void StlObject::loadFile(QString fileName){
                 face=addFace(e1,e2,e3);
 
                 triang_count++;
-                emit progress(file->pos(),file->size(), "Loading and analizing STL");
+                emit progress(file->pos(),file->size(), tr("Loading and analizing STL"));
             }
         }
         //if binary
@@ -239,7 +241,7 @@ void StlObject::loadFile(QString fileName){
         qDebug() << "ilosc verteksow:" << this->vertexes.size();
         qDebug() << "ilosc facy:" << this->faces.size();
         qDebug() << "ilosc zlych edgy: " << this->badEdges.size();
-
+        render();
         if(this->badEdges.size()>0){
             this->nonManifold=true;
         }
@@ -257,11 +259,30 @@ void StlObject::loadFile(QString fileName){
     qDebug() << "loading took: " <<myTimer.elapsed();
 }
 
+
+void StlObject::render(){
+    GLuint index = glGenLists(1);
+    this->list_index=index;
+    glFinish();
+    //iterator
+    QHash<QString, Face*>::iterator i;
+    glNewList(this->list_index, GL_COMPILE);
+    for(i = this->faces.begin(); i != this->faces.end(); ++i){
+        glBegin(GL_TRIANGLES);
+        glNormal3f(i.value()->getNormal()->x(),i.value()->getNormal()->y(),i.value()->getNormal()->z());
+        glVertex3f(i.value()->getEdge1()->getStart()->x()*this->scaleValue, i.value()->getEdge1()->getStart()->y()*this->scaleValue, i.value()->getEdge1()->getStart()->z()*this->scaleValue);
+        glVertex3f(i.value()->getEdge2()->getStart()->x()*this->scaleValue, i.value()->getEdge2()->getStart()->y()*this->scaleValue, i.value()->getEdge2()->getStart()->z()*this->scaleValue);
+        glVertex3f(i.value()->getEdge3()->getStart()->x()*this->scaleValue, i.value()->getEdge3()->getStart()->y()*this->scaleValue, i.value()->getEdge3()->getStart()->z()*this->scaleValue);
+        glEnd( );
+    }
+    glEndList();
+}
+
 //adding verteces without adding doubles
 Vertex* StlObject::addVertex(float x, float y, float z){
     Vertex* out;
     //merging close vetreces so stiching algorythm have less work
-    float threshold=0.001;
+    float threshold=0.005;
     float roundedX=(int)(x/threshold)*threshold;
     float roundedY=(int)(y/threshold)*threshold;
     float roundedZ=(int)(z/threshold)*threshold;
@@ -327,6 +348,7 @@ void StlObject::select(bool value){
     this->selected=value;
 }
 
+
 void StlObject::moveXY(double x, double y){
     this->offset.setX(x);
     this->offset.setY(y);
@@ -347,49 +369,63 @@ double StlObject::getScale(){
 }
 
 void StlObject::rotate(double angle){
+    if(this->mirrorX^this->mirrorY){
+        this->rotation-=angle;
+    }
+    else{
+        this->rotation+=angle;
+    }
+
+    if(abs(this->rotation)>360){
+        this->rotation-=360*((int)this->rotation/360);
+    }
+}
+
+void StlObject::setRotation(double angle){
     this->rotation=angle;
 }
 
 double StlObject::getRotation(){
-    return this->rotation;
+    return ((int)this->rotation/5)*5;
 }
 
 void StlObject::draw(bool picking){
-    GLfloat   gray[4]={0.9,0.9,0.9,1.0};
-    GLfloat   white[4]={0.9,1.0,0.8,1.0};
-    GLfloat   red[4]={1.0,0.8,0.8,1.0};
     GLfloat   reder[4]={1.0,0.0,0.0,1.0};
+    GLfloat     ambient[] = { 0.1,   0.1,     0.1,  1.0};
+    GLfloat     diffuse[] = {0.9,  0.9,    0.9, 1.0};
+    GLfloat     specular[] = {0.50,  0.50,    0.50, 1.0};
+    GLfloat     shininess[] = {200};
+    GLfloat     ambient_S[] = {0.1,   0.2,    0.16,    1.0};
+    GLfloat     diffuse_S[] = {0.1,   0.60980392,0.60980392,1.0};
+    GLfloat     specular_S[] = {0.60196078,0.60196078,0.60196078,1.0};
+    GLfloat     shininess_S[] = {200};
     GLfloat   fCurrentColor[4];
-    //iterator
-    QHash<QString, Face*>::iterator i;
     // Get the current color
     glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
+        glDisable(GL_COLOR_MATERIAL);
     if(!picking){
         if(selected){
-            glColor4fv(white);
-        }
-        else if(colliding){
-            glColor4fv(red);
+            glMaterialfv(GL_FRONT, GL_AMBIENT,ambient_S);
+            glMaterialfv(GL_FRONT, GL_DIFFUSE,diffuse_S);
+            glMaterialfv(GL_FRONT, GL_SPECULAR,specular_S);
+            glMaterialfv(GL_FRONT, GL_SHININESS,shininess_S);
         }
         else{
-            glColor4fv(gray);
+            glMaterialfv(GL_FRONT, GL_AMBIENT,ambient);
+            glMaterialfv(GL_FRONT, GL_DIFFUSE,diffuse);
+            glMaterialfv(GL_FRONT, GL_SPECULAR,specular);
+            glMaterialfv(GL_FRONT, GL_SHININESS,shininess);
         }
     }
     glPushMatrix();
     glTranslatef(0.0+this->offset.x(), 0.0+this->offset.y(), (this->mirrorZ ? getHeight(): 0.0));
 
-    glScalef( (this->mirrorX ? -1.0 : 1.0), (this->mirrorY ? -1.0 : 1.0), (this->mirrorZ ? -1.0 : 1.0) );
+    glScalef( (this->mirrorX ? -1.0 : 1.0)*this->scaleValue, (this->mirrorY ? -1.0 : 1.0)*this->scaleValue, (this->mirrorZ ? -1.0 : 1.0)*this->scaleValue);
 
     glRotatef(((int)this->rotation/5)*5, 0.0, 0.0, 1.0);
-    glBegin(GL_TRIANGLES);
-    for(i = this->faces.begin(); i != this->faces.end(); ++i){
-        glNormal3f(i.value()->getNormal()->x(),i.value()->getNormal()->y(),i.value()->getNormal()->z());
-        glVertex3f(i.value()->getEdge1()->getStart()->x()*this->scaleValue, i.value()->getEdge1()->getStart()->y()*this->scaleValue, i.value()->getEdge1()->getStart()->z()*this->scaleValue);
-        glVertex3f(i.value()->getEdge2()->getStart()->x()*this->scaleValue, i.value()->getEdge2()->getStart()->y()*this->scaleValue, i.value()->getEdge2()->getStart()->z()*this->scaleValue);
-        glVertex3f(i.value()->getEdge3()->getStart()->x()*this->scaleValue, i.value()->getEdge3()->getStart()->y()*this->scaleValue, i.value()->getEdge3()->getStart()->z()*this->scaleValue);
-    }
-    glEnd( );
+    //call list
 
+    glCallList(this->list_index);
     if(!picking){
         //draw bad edges
         glDisable(GL_LIGHTING);
@@ -398,8 +434,8 @@ void StlObject::draw(bool picking){
         glDepthMask(false);
         glBegin(GL_LINES);
         for(int i=0; i<this->badEdges.size(); i++){
-            glVertex3f(this->badEdges.at(i)->getStart()->x()*this->scaleValue, this->badEdges.at(i)->getStart()->y()*this->scaleValue, this->badEdges.at(i)->getStart()->z()*this->scaleValue);
-            glVertex3f(this->badEdges.at(i)->getStop()->x()*this->scaleValue, this->badEdges.at(i)->getStop()->y()*this->scaleValue, this->badEdges.at(i)->getStop()->z()*this->scaleValue);
+            glVertex3f(this->badEdges.at(i)->getStart()->x(), this->badEdges.at(i)->getStart()->y(), this->badEdges.at(i)->getStart()->z());
+            glVertex3f(this->badEdges.at(i)->getStop()->x(), this->badEdges.at(i)->getStop()->y(), this->badEdges.at(i)->getStop()->z());
         }
         glEnd( );
         glDepthMask(true);
@@ -407,6 +443,7 @@ void StlObject::draw(bool picking){
     }
     glPopMatrix();
     // Restore the current color
+    glEnable(GL_COLOR_MATERIAL);
     glColor4fv(fCurrentColor);
 }
 
@@ -541,6 +578,9 @@ void StlObject::repairNormals(){
             emit progress(maximum-unOrientedFaces.size(),maximum, tr("Calculating normal vectors"));
         }
     }
+    //rerender mesh
+    glDeleteLists(this->list_index, 1);
+    render();
     emit doneProcessing(true);
 }
 
@@ -615,4 +655,8 @@ double StlObject::angle(QVector3D p1, QVector3D p2){
 
 QString StlObject::getFileName(){
     return this->fileName;
+}
+
+void StlObject::freeList(){
+    glDeleteLists(this->list_index, 1);
 }
