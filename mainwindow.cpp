@@ -362,8 +362,8 @@ void MainWindow::on_pauseBtn_toggled(bool pause){
 
 void MainWindow::drawTemp(double t1, double t2, double hb){
     ui->tempGraphWidget->addMeasurment(t1,t2,hb,QDateTime::currentMSecsSinceEpoch()/1000);
-    ui->t1Label->setText(QString::number(t1)+" °C");
-    ui->t3Label->setText(QString::number(hb)+" °C");
+    ui->t1Label->setText(QString::number(t1)+" Â°C");
+    ui->t3Label->setText(QString::number(hb)+" Â°C");
 }
 
 //update print progress

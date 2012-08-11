@@ -270,9 +270,9 @@ void StlObject::render(){
     for(i = this->faces.begin(); i != this->faces.end(); ++i){
         glBegin(GL_TRIANGLES);
         glNormal3f(i.value()->getNormal()->x(),i.value()->getNormal()->y(),i.value()->getNormal()->z());
-        glVertex3f(i.value()->getEdge1()->getStart()->x()*this->scaleValue, i.value()->getEdge1()->getStart()->y()*this->scaleValue, i.value()->getEdge1()->getStart()->z()*this->scaleValue);
-        glVertex3f(i.value()->getEdge2()->getStart()->x()*this->scaleValue, i.value()->getEdge2()->getStart()->y()*this->scaleValue, i.value()->getEdge2()->getStart()->z()*this->scaleValue);
-        glVertex3f(i.value()->getEdge3()->getStart()->x()*this->scaleValue, i.value()->getEdge3()->getStart()->y()*this->scaleValue, i.value()->getEdge3()->getStart()->z()*this->scaleValue);
+        glVertex3f(i.value()->getEdge1()->getStart()->x(), i.value()->getEdge1()->getStart()->y(), i.value()->getEdge1()->getStart()->z());
+        glVertex3f(i.value()->getEdge2()->getStart()->x(), i.value()->getEdge2()->getStart()->y(), i.value()->getEdge2()->getStart()->z());
+        glVertex3f(i.value()->getEdge3()->getStart()->x(), i.value()->getEdge3()->getStart()->y(), i.value()->getEdge3()->getStart()->z());
         glEnd( );
     }
     glEndList();
@@ -282,7 +282,7 @@ void StlObject::render(){
 Vertex* StlObject::addVertex(float x, float y, float z){
     Vertex* out;
     //merging close vetreces so stiching algorythm have less work
-    float threshold=0.005;
+    float threshold=0.002;
     float roundedX=(int)(x/threshold)*threshold;
     float roundedY=(int)(y/threshold)*threshold;
     float roundedZ=(int)(z/threshold)*threshold;
@@ -332,16 +332,16 @@ Face* StlObject::addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3){
     Face* out;
 
     if(this->faces.contains(hash)){
-        return this->faces.value(hash);
+        out = this->faces.value(hash);
     }
     else{
         out = new Face(edge1,edge2,edge3);
         this->faces.insert(hash,out);
-        edge1->addFace(out);
-        edge2->addFace(out);
-        edge3->addFace(out);
-        return out;
     }
+    edge1->addFace(out);
+    edge2->addFace(out);
+    edge3->addFace(out);
+    return out;
 }
 
 void StlObject::select(bool value){
