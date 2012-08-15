@@ -552,7 +552,7 @@ void MainWindow::saveSettings(){
     settings.setValue("sizeY", this->optionDialog->getSize().y());
     settings.setValue("sizeZ", this->optionDialog->getSize().z());
     //window look
-    settings.setValue("font", this->optionDialog->getCurrentFont().toString());
+    settings.setValue("font", QApplication::font().toString());
     //write temperature setting
     settings.beginWriteArray("temp1Values");
     for(int i=0; i<ui->t1Combo->count(); i++){

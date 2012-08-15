@@ -141,6 +141,7 @@ void OptionDialog::on_changeFontBtn_clicked()
 }
 
 void OptionDialog::setCurrentFont(QString font){
+    qDebug() << font;
     QFont newFont;
     newFont.fromString(font);
     this->currentFont=font;
