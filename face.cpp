@@ -80,10 +80,10 @@ void Face::setNormalIsGood(bool value){
 
 QString Face::getHash(){
     QString out;
-    QList<int> edges;
-    edges.append((int)this->edge1);
-    edges.append((int)this->edge2);
-    edges.append((int)this->edge3);
+    QList<size_t> edges;
+    edges.append((size_t)this->edge1);
+    edges.append((size_t)this->edge2);
+    edges.append((size_t)this->edge3);
     //sort edges so all faces using these have same hash
     qSort(edges);
     out.append(QString::number(edges.at(0))+QString::number(edges.at(1))+QString::number(edges.at(2)));
