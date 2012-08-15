@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QComboBox>
 #include <QVector3D>
+#include <QFontDialog>
 #include <QTableWidgetItem>
 #include <QFileDialog>
 #include <QColorDialog>
@@ -27,6 +28,8 @@ public:
     QVector3D getSize();
     QList< QPair<int, QString > > getExtruders();
     void addExtruder(QPair<int, QString>);
+    inline QFont getCurrentFont() { return currentFont;}
+    void setCurrentFont(QString font);
 public slots:
     void setSlicerDir(QString dir);
     void setConfigDir(QString dir);
@@ -41,6 +44,8 @@ private slots:
 
     void on_tableWidget_cellDoubleClicked(int row, int column);
 
+    void on_changeFontBtn_clicked();
+
 signals:
     void slicerPathChanged(QString);
     void outputPathChanged(QString);
@@ -49,6 +54,7 @@ signals:
 private:
     Ui::OptionDialog *ui;
     QList<Material*>* materials;
+    QFont currentFont;
 };
 
 #endif // OPTIONDIALOG_H

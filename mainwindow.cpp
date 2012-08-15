@@ -6,7 +6,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
     //about window
     this->aboutWindow = new AboutWindow();
     this->aboutWindow->hide();
@@ -552,6 +551,8 @@ void MainWindow::saveSettings(){
     settings.setValue("sizeX", this->optionDialog->getSize().x());
     settings.setValue("sizeY", this->optionDialog->getSize().y());
     settings.setValue("sizeZ", this->optionDialog->getSize().z());
+    //window look
+    settings.setValue("font", this->optionDialog->getCurrentFont().toString());
     //write temperature setting
     settings.beginWriteArray("temp1Values");
     for(int i=0; i<ui->t1Combo->count(); i++){
@@ -622,6 +623,8 @@ void MainWindow::restoreSettings(){
     ui->headControlWidget->setSize(this->optionDialog->getSize().x(),this->optionDialog->getSize().y());
     ui->headControlWidget->hidePoints(true);
     ui->zSlider->setMaximum(this->optionDialog->getSize().z()*10);
+    //window look
+    this->optionDialog->setCurrentFont(settings.value("font",QApplication::font().toString()).toString());
     //restore temp1 combo
     int size = settings.beginReadArray("temp1Values");
     int currentIndex=0;

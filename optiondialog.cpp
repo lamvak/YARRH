@@ -127,3 +127,23 @@ void OptionDialog::on_tableWidget_cellDoubleClicked(int row, int column)
         this->materials->at(row)->changeColor(color);
     }
 }
+
+void OptionDialog::on_changeFontBtn_clicked()
+{
+
+    bool ok;
+    QFont font=QFontDialog::getFont(&ok,this);
+    if(ok){
+        QApplication::setFont(font);
+        ui->currentFontLbl->setText(font.toString());
+        this->currentFont=font;
+    }
+}
+
+void OptionDialog::setCurrentFont(QString font){
+    QFont newFont;
+    newFont.fromString(font);
+    this->currentFont=font;
+    ui->currentFontLbl->setText(font);
+    QApplication::setFont(newFont);
+}
