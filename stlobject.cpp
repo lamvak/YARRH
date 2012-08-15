@@ -304,7 +304,7 @@ Vertex* StlObject::addVertex(float x, float y, float z){
 //adding edges
 HalfEdge* StlObject::addHalfEdge(Vertex *v1, Vertex *v2){
     HalfEdge* out;
-    QString hash=QString::number((int)v1)+QString::number((int)v2);
+    QString hash=QString::number((size_t)v1)+QString::number((size_t)v2);
 
     if(!this->edges.contains(hash)){
         out=new HalfEdge(v1,v2);
@@ -323,10 +323,10 @@ HalfEdge* StlObject::addHalfEdge(Vertex *v1, Vertex *v2){
 //adding face
 Face* StlObject::addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3){
     QString hash;
-    QList<int> edges;
-    edges.append((int)edge1);
-    edges.append((int)edge2);
-    edges.append((int)edge3);
+    QList<size_t> edges;
+    edges.append((size_t)edge1);
+    edges.append((size_t)edge2);
+    edges.append((size_t)edge3);
     //sort edges so all faces using these have same hash
     qSort(edges);
     hash.append(QString::number(edges.at(0))+QString::number(edges.at(1))+QString::number(edges.at(2)));
