@@ -6,10 +6,10 @@
 #include <QVector3D>
 #include <QtOpenGL>
 
-#if defined (Q_WS_MAC)
+#if defined(Q_WS_MAC)
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
-#elsif
+#elif defined(Q_WS_QWS)
 #include <GL/gl.h>
 #include <GL/glu.h>
 #endif
