@@ -320,7 +320,6 @@ void SliceDialog::on_sliceTool_clicked()
 
 void SliceDialog::on_materialTool_clicked()
 {
-   this->stlView->setActiveTool(StlView::FILL);
    QMenu menu(tr("Material"),this);
    QList<QWidgetAction*> actions;
    for(int i=0; i<this->materials->size(); i++){
@@ -332,5 +331,9 @@ void SliceDialog::on_materialTool_clicked()
        actions.append(action1);
        menu.addAction(action1);
    }
-   this->stlView->setActiveMaterial(actions.indexOf((QWidgetAction*)menu.exec(ui->materialTool->mapToGlobal(QPoint(0,0)))));
+   QWidgetAction* action = (QWidgetAction*)menu.exec(ui->materialTool->mapToGlobal(QPoint(0,0)));
+   if(actions.contains(action)){
+        this->stlView->setActiveMaterial(actions.indexOf(action));
+        this->stlView->setActiveTool(StlView::FILL);
+   }
 }
