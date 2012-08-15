@@ -5,8 +5,14 @@
 #include <QVector4D>
 #include <QVector3D>
 #include <QtOpenGL>
+
+#if defined (Q_WS_MAC)
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#elsif
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
 
 //class that hold info about layer in opengl lists for faster rendering
 class Layer : public QObject

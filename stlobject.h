@@ -3,8 +3,15 @@
 
 #include <QObject>
 #include <QtOpenGL>
+
+#if defined (Q_WS_MAC)
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#elsif
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
+
 #include <QVector3D>
 #include <QHash>
 #include <QCryptographicHash>
