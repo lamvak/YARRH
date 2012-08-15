@@ -215,7 +215,7 @@ void StlObject::loadFile(QString fileName){
         //set center and offset
         qDebug() << this->offset;
         QHash<QString, Vertex*>::iterator i;
-        this->offset=Vertex((xMax+xMin)/2,(yMax+yMin)/2,zMin);
+        this->offset=QVector3D((xMax+xMin)/2,(yMax+yMin)/2,zMin);
 
         for(i = this->vertexes.begin(); i != this->vertexes.end(); ++i){
             i.value()->setX((i.value()->x()-this->offset.x())*0.01);
