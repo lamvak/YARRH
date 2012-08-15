@@ -68,16 +68,21 @@ TRANSLATIONS = yarrh_pl.ts \
                yarrh_de.ts \
                yarrh_bg.ts \
                yarrh_fi.ts
-RC_FILE = icon.rc
+
 
 include(qextserialport/qextserialport.pri)
 
 win32 {
 #LIBS+=-lglut32
+    RC_FILE = icon.rc
+}
+
+macx {
+    ICON = icon.icns
 }
 
 unix {
-LIBS += -lGLU
+    LIBS += -lGLU
 }
 
 OBJECTS_DIR = build

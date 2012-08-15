@@ -56,7 +56,7 @@ void OptionDialog::setSize(QVector3D size){
 
 void OptionDialog::on_slicerDirBtn_clicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Find slicer exe"), ui->slicerDir->text(), tr("Slic3r-console (slic3r-console.exe)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Find slicer"), ui->slicerDir->text(), tr("Slic3r-console (slic3r-console*)"));
     ui->slicerDir->setText(fileName);
     emit slicerPathChanged(fileName);
 }
