@@ -14,8 +14,8 @@ HalfEdge::HalfEdge(): start(NULL), stop(NULL){
 QString HalfEdge::computeHash(){
     QString first;
     QString second;
-    first=QString::number((int)start);
-    second=QString::number((int)stop);
+    first=QString::number((size_t)start);
+    second=QString::number((size_t)stop);
     first.append(second);
     return first;
 }
