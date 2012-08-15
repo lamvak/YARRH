@@ -648,6 +648,9 @@ void MainWindow::restoreSettings(){
     settings.endArray();
     //restore extruders
     size = settings.beginReadArray("extruders");
+    if(size==0){
+        this->optionDialog->addExtruder(qMakePair(0,QString("#eeeeee")));
+    }
     currentIndex=0;
     for (int i = 0; i < size; ++i) {
         settings.setArrayIndex(i);
