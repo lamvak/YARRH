@@ -7,6 +7,8 @@ Face::Face(HalfEdge *e1, HalfEdge *e2, HalfEdge *e3){
     this->edge3=e3;
     this->normal=computeNormal((QVector3D*)edge1->getStop(),(QVector3D*)edge2->getStop(),(QVector3D*)edge3->getStop());
     this->goodNormal=false;
+    this->maxZ=qMax(qMax(this->edge1->getStart()->z(),this->edge2->getStart()->z()),this->edge3->getStart()->z());
+    this->minZ=qMin(qMin(this->edge1->getStart()->z(),this->edge2->getStart()->z()),this->edge3->getStart()->z());
 }
 
 Face::Face(): edge1(NULL), edge2(NULL), edge3(NULL), normal(NULL){

@@ -14,6 +14,8 @@
 #include "vertex.h"
 #include "halfedge.h"
 #include "face.h"
+//materials
+#include "material.h"
 
 
 //for sorting q list by angles
@@ -56,6 +58,7 @@ private:
     bool mirrorZ;
     int list_index;
     bool preSelected;
+    Material* objectMaterial;
     //object description
 
     //list of verteces
@@ -97,6 +100,8 @@ public:
     void mirror(QChar axis);
     void repairHoles();
     void repairNormals();
+    inline void setMaterial(Material* material){ objectMaterial=material ;}
+    inline Material* getMaterial() { return objectMaterial; }
     QString getFileName();
     inline double getWidth(){ return width*scaleValue; }
     inline double getLenght(){ return lenght*scaleValue; }

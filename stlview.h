@@ -6,8 +6,8 @@
 #include <GL/gl.h>
 #include <QtOpenGL>
 #include <QRect>
-#include <btBulletDynamicsCommon.h>
 #include "stlobject.h"
+#include "material.h"
 
 class StlView : public QGLWidget
 {
@@ -31,9 +31,12 @@ public:
         COPY = 6,
         MIRROR = 7,
         REPAIR = 8,
-        BOX_SELECT = 9
+        SLICE = 9,
+        FILL = 10,
+        BOX_SELECT = 11
     };
-
+    void setMaterialList(QList<Material*>* list);
+    inline void setActiveMaterial(int Material) {activeMaterial=Material;}
 signals:
     void objectPicked(bool);
     void selectedRotation(int);
@@ -49,6 +52,8 @@ public slots:
     StlObject* getObject(QString);
     void removeObject();
     void rotateObject(double);
+    void changeObjectMaterial();
+    void sliceObject();
     void scaleObject(double);
     void moveObject(QPointF);
     void mirrorObject(QChar axis);
@@ -80,6 +85,7 @@ private:
     QAction* mirrorZAction;
     int activeTool;
     int previousTool;
+    int activeMaterial;
     GLfloat eyeX,eyeY,eyeZ;
     GLfloat upX,upY,upZ;
     GLfloat theta,phi;
@@ -104,6 +110,7 @@ private:
     QPointF screenToWorld(int x, int y);
     QList<QVector3D> getSelectedObjectsCords();
     QList<QVector3D> oryginalCenters;
+    QList<Material*>* materials;
     double originalScale;
     QList<double> oryginalScales;
     QList<double> getScales();
@@ -113,10 +120,6 @@ private:
     QTimer* boxUpdater;
     void drawSelectionBox();
     bool allMirrored();
-    //getting ready to use bullet physics engine
-//    btCollisionWorld* collisionWorld;
-//    btDefaultCollisionConfiguration* collisionConfiguration;
-//    btCollisionDispatcher* dispatcher;
 };
 
 

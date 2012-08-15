@@ -68,7 +68,7 @@ void Layer::display(float scale, bool last, bool show_travel, int current_layer)
     GLfloat fCurrentColor[4];
 
     glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
-    if(last)
+    if(last && current_layer!=this->layer_num)
        glColor4fv(red);
     else{
        glColor4fv(gray);

@@ -24,5 +24,7 @@
         <file>imgs/icons/boxselect.png</file>
         <file>yarrh_pl.qm</file>
         <file>yarrh_en.qm</file>
+        <file>imgs/icons/slice.png</file>
+        <file>imgs/icons/fill.png</file>
     </qresource>
 </RCC>

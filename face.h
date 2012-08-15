@@ -20,6 +20,8 @@ public:
     inline HalfEdge* getEdge1(){return edge1;}
     inline HalfEdge* getEdge2(){return edge2;}
     inline HalfEdge* getEdge3(){return edge3;}
+    inline double getMaxZ() {return maxZ;}
+    inline double getMinZ() {return minZ;}
     inline bool isNormalGood() {return goodNormal;}
     void addNeighbor(Face* );
     QList<Face*> getNeighbors();
@@ -31,6 +33,8 @@ private:
     HalfEdge* edge1;
     HalfEdge* edge2;
     HalfEdge* edge3;
+    double maxZ;
+    double minZ;
     QVector3D* normal;
     QList<Face*> neighbors;
     bool goodNormal;

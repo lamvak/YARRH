@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this->optionDialog, SIGNAL(slicerPathChanged(QString)), this->sliceDialog, SLOT(updateSlicerPath(QString)));
     connect(this->optionDialog, SIGNAL(outputPathChanged(QString)), this->sliceDialog, SLOT(updateOutputPath(QString)));
     connect(this->optionDialog, SIGNAL(newSize(QVector3D)), this, SLOT(updatadeSize(QVector3D)));
+    connect(this->optionDialog, SIGNAL(newList(QList<Material*>*)), this->sliceDialog, SLOT(setMaterialList(QList<Material*>*)));
     connect(this->sliceDialog, SIGNAL(fileSliced(QString)), this, SLOT(loadFile(QString)));
     //set version number
     this->setWindowTitle("YARRH v"+QString::number(VERSION_MAJOR)+"."+QString::number(VERSION_MINOR)+"."+QString::number(VERSION_REVISION));
@@ -41,7 +42,6 @@ MainWindow::MainWindow(QWidget *parent) :
     //connecting move btns
     connect(ui->homeX, SIGNAL(clicked()), printerObj, SLOT(homeX()), Qt::QueuedConnection);
     connect(ui->homeY, SIGNAL(clicked()), printerObj, SLOT(homeY()), Qt::QueuedConnection);
-    connect(ui->homeZ, SIGNAL(clicked()), printerObj, SLOT(homeZ()), Qt::QueuedConnection);
     connect(ui->homeAll, SIGNAL(clicked()), printerObj, SLOT(homeAll()), Qt::QueuedConnection);
     //connect monit temp checkbox
     connect(ui->graphGroupBox, SIGNAL(toggled(bool)), printerObj, SLOT(setMonitorTemperature(bool)),Qt::QueuedConnection);
@@ -285,6 +285,8 @@ void MainWindow::loadFile(QString fileName){
         ui->pauseBtn->blockSignals(false);
         ui->progressBar->hide();
         ui->pauseBtn->setText(tr("Pause"));
+        ui->printBtn->setText(tr("Print"));
+        ui->printBtn->setIcon(QIcon(":/imgs/icons/print.png"));
         ui->pauseBtn->setIcon(QIcon(":/imgs/icons/pause.png"));
         this->currentLayer=0;
         this->lastZ=0;
@@ -567,6 +569,15 @@ void MainWindow::saveSettings(){
     }
     settings.endArray();
 
+    settings.beginWriteArray("extruders");
+    QList< QPair<int, QString > > extruders=this->optionDialog->getExtruders();
+    for(int i=0; i<extruders.size(); i++){
+        settings.setArrayIndex(i);
+        settings.setValue("number",extruders.at(i).first);
+        settings.setValue("color", extruders.at(i).second);
+    }
+    settings.endArray();
+
     settings.sync();
 }
 
@@ -634,6 +645,14 @@ void MainWindow::restoreSettings(){
         }
     }
     ui->hbCombo->setCurrentIndex(currentIndex);
+    settings.endArray();
+    //restore extruders
+    size = settings.beginReadArray("extruders");
+    currentIndex=0;
+    for (int i = 0; i < size; ++i) {
+        settings.setArrayIndex(i);
+        this->optionDialog->addExtruder(qMakePair(settings.value("number").toInt(),settings.value("color").toString()));
+    }
     settings.endArray();
 
 }
@@ -714,11 +733,18 @@ void MainWindow::updatadeSize(QVector3D newSize){
 
 void MainWindow::printFinished(bool value){
     if(value){
+        qDebug() << this->durationTime.toString("hh:mm:ss");
         ui->pauseBtn->setEnabled(false);
+        ui->axisControlGroup->setEnabled(true);
         ui->printBtn->setEnabled(true);
         ui->progressBar->setHidden(true);
         ui->printBtn->setText(tr("Print"));
         ui->printBtn->setIcon(QIcon(":/imgs/icons/print.png"));
+
+        QMessageBox msgBox;
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.setText(tr("Print finished in ")+this->durationTime.toString("hh:mm:ss"));
+        msgBox.exec();
     }
 }
 

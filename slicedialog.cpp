@@ -312,3 +312,25 @@ void SliceDialog::on_repairTool_clicked()
 {
    this->stlView->setActiveTool(StlView::REPAIR);
 }
+
+void SliceDialog::on_sliceTool_clicked()
+{
+    this->stlView->setActiveTool(StlView::SLICE);
+}
+
+void SliceDialog::on_materialTool_clicked()
+{
+   this->stlView->setActiveTool(StlView::FILL);
+   QMenu menu(tr("Material"),this);
+   QList<QWidgetAction*> actions;
+   for(int i=0; i<this->materials->size(); i++){
+       QLabel *label1 = new QLabel("Tool "+QString::number(i));
+       label1->setObjectName("label1");
+       label1->setStyleSheet("background-color: rgb("+QString::number(materials->at(i)->getColor().red())+","+QString::number(materials->at(i)->getColor().green())+","+QString::number(materials->at(i)->getColor().blue())+");");
+       QWidgetAction *action1 =new QWidgetAction(this);
+       action1->setDefaultWidget(label1);
+       actions.append(action1);
+       menu.addAction(action1);
+   }
+   this->stlView->setActiveMaterial(actions.indexOf((QWidgetAction*)menu.exec(ui->materialTool->mapToGlobal(QPoint(0,0)))));
+}

@@ -237,8 +237,10 @@ void Printer::send_next(){
         this->lineNum++;
     }
     else{
+        if(this->isPrinting){
+            emit printFinished(true);
+        }
         this->isPrinting=false;
-        emit printFinished(true);
     }
 }
 

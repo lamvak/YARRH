@@ -29,7 +29,9 @@ SOURCES += main.cpp\
     stlobject.cpp \
     face.cpp \
     halfedge.cpp \
-    vertex.cpp
+    vertex.cpp \
+    slice.cpp \
+    material.cpp
 
 HEADERS  += mainwindow.h \
     glwidget.h \
@@ -48,7 +50,9 @@ HEADERS  += mainwindow.h \
     stlobject.h \
     face.h \
     halfedge.h \
-    vertex.h
+    vertex.h \
+    slice.h \
+    material.h
 
 FORMS    += mainwindow.ui \
     aboutwindow.ui \
@@ -67,7 +71,6 @@ TRANSLATIONS = yarrh_pl.ts \
 RC_FILE = icon.rc
 
 include(qextserialport/qextserialport.pri)
-include(bullet/bullet.pri)
 
 win32 {
 #LIBS+=-lglut32
@@ -81,6 +84,10 @@ OBJECTS_DIR = build
 MOC_DIR = build
 UI_DIR = build
 RCC_DIR = build
+
+
+
+
 
 
 

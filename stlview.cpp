@@ -44,16 +44,18 @@ StlView::StlView(QWidget *parent,const QGLWidget * shareWidget)
     connect(this->mirrorYAction, SIGNAL(triggered(bool)), this, SLOT(mirrorY()));
     this->mirrorZAction =  this->mirrorMenu->addAction(tr("Mirror Z"));
     connect(this->mirrorZAction, SIGNAL(triggered(bool)), this, SLOT(mirrorZ()));
+}
 
-    //setting up collison detection
-//    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
-//    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
-//    btVector3   worldAabbMin(-20000,-20000,-20000);
-//    btVector3   worldAabbMax(20000,20000,20000);
-
-//    btAxisSweep3*   broadphase = new btAxisSweep3(worldAabbMin,worldAabbMax);
-
-//    collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
+void StlView::setMaterialList(QList<Material *> *list){
+    QHash<QString, StlObject*>::iterator j;
+    for(j = this->objects.begin(); j != this->objects.end(); ++j){
+        if(!list->contains(j.value()->getMaterial())){
+            j.value()->setMaterial(list->first());
+        }
+    }
+    this->materials=list;
+    this->activeMaterial=0;
+    updateGL();
 }
 
 //size hints
@@ -126,6 +128,12 @@ void StlView::mousePressEvent(QMouseEvent *event)
                         }
                         if(this->activeTool==REPAIR){
                             repairObject();
+                        }
+                        if(this->activeTool==SLICE){
+                            sliceObject();
+                        }
+                        if(this->activeTool==FILL){
+                            changeObjectMaterial();
                         }
                         if(this->activeTool==MIRROR){
                             this->mirrorMenu->move(event->globalPos());
@@ -243,8 +251,8 @@ void StlView::mouseMoveEvent(QMouseEvent *event)
                 break;
             }
         }
-        //right button move objects
-        if((event->buttons() & Qt::MiddleButton) && (event->modifiers()!=Qt::ShiftModifier)){
+        //middle button move objects
+        if((event->buttons() & Qt::MiddleButton) && (event->modifiers()!=Qt::ShiftModifier) && this->objectSelected){
             for(int i=0; i<this->selectedObjects.size(); i++){
                 this->objects.value(this->selectedObjects.at(i))->moveXY(this->objects.value(this->selectedObjects.at(i))->getOffset().x()+currentClicked.x()-clicked.x(),this->objects.value(this->selectedObjects.at(i))->getOffset().y()+currentClicked.y()-clicked.y());
             }
@@ -699,6 +707,7 @@ QString StlView::addObject(QString fileName){
     connect(newObject, SIGNAL(progress(int,int,QString)), this, SIGNAL(progress(int,int,QString)));
     connect(newObject, SIGNAL(doneProcessing(bool)), this, SIGNAL(doneProcessing(bool)));
     newObject->loadFile(fileName);
+    newObject->setMaterial(materials->first());
     this->objects.insert(name, newObject);
     if(this->objects.value(name)->getIsManifold()){
         emit nonManifold(name);
@@ -852,6 +861,17 @@ void StlView::duplicateObject(){
     updateGL();
 }
 
+void StlView::changeObjectMaterial(){
+    for(int i=0; i<this->selectedObjects.size(); i++){
+        this->objects.value(this->selectedObjects.at(i))->setMaterial(this->materials->at(this->activeMaterial));
+    }
+}
+
+//here will be basic slicing for layer view
+void StlView::sliceObject(){
+    qDebug() << "Ciach!";
+}
+
 QStringList StlView::getColorsList(){
     return this->objects.keys();
 }
@@ -982,6 +1002,12 @@ void StlView::setActiveTool(int tool){
         break;
     case CENTER:
         this->setCursor(QCursor(QPixmap(":/imgs/icons/center.png").scaled(16,16)));
+        break;
+    case SLICE:
+        this->setCursor(QCursor(QPixmap(":/imgs/icons/slice.png")));
+        break;
+    case FILL:
+        this->setCursor(QCursor(QPixmap(":/imgs/icons/fill.png")));
         break;
     }
 }

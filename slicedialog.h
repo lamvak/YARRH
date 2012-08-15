@@ -22,12 +22,14 @@ public:
     void clearObjects();
     void setLastDir(QString dir);
     void setTableSize(int x, int y);
+
 public slots:
     void addObject(QString file="");
     void updateConfigs(QString dir);
     void updateSlicerPath(QString path);
     void updateOutputPath(QString path);
     void updateStlView();
+    inline void setMaterialList(QList<Material*>* list) {materials=list; stlView->setMaterialList(list);}
 private slots:
     void on_addBtn_clicked();
     void on_sliceBtn_clicked();
@@ -69,7 +71,12 @@ private slots:
 
     void on_repairTool_clicked();
 
+    void on_sliceTool_clicked();
+
+    void on_materialTool_clicked();
+
 private:
+    QList<Material*>* materials;
     Ui::SliceDialog *ui;
     QString lastDir;
     QString slicerPath;

@@ -50,6 +50,7 @@ void StlObject::copy(StlObject *copyFrom){
     this->mirrorY=copyFrom->mirrorY;
     this->mirrorZ=copyFrom->mirrorZ;
     this->list_index=copyFrom->list_index;
+    this->objectMaterial = copyFrom->objectMaterial;
 }
 
 void StlObject::loadFile(QString fileName){
@@ -392,12 +393,12 @@ double StlObject::getRotation(){
 void StlObject::draw(bool picking){
     GLfloat   reder[4]={1.0,0.0,0.0,1.0};
     GLfloat     ambient[] = { 0.1,   0.1,     0.1,  1.0};
-    GLfloat     diffuse[] = {0.9,  0.9,    0.9, 1.0};
+    GLfloat     diffuse[] = {this->objectMaterial->getColor().redF(),  this->objectMaterial->getColor().greenF(),    this->objectMaterial->getColor().blueF(), 1.0};
     GLfloat     specular[] = {0.50,  0.50,    0.50, 1.0};
     GLfloat     shininess[] = {200};
-    GLfloat     ambient_S[] = {0.1,   0.2,    0.16,    1.0};
-    GLfloat     diffuse_S[] = {0.1,   0.60980392,0.60980392,1.0};
-    GLfloat     specular_S[] = {0.60196078,0.60196078,0.60196078,1.0};
+    GLfloat     ambient_S[] = { 0.1,   0.1,     0.1,  1.0};
+    GLfloat     diffuse_S[] = {this->objectMaterial->getColor().lighter(175).redF(),   this->objectMaterial->getColor().lighter(125).greenF(),this->objectMaterial->getColor().lighter(125).blueF(),1.0};
+    GLfloat     specular_S[] = {0.50,  0.50,    0.50, 1.0};
     GLfloat     shininess_S[] = {200};
     GLfloat   fCurrentColor[4];
     // Get the current color

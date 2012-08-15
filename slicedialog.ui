@@ -645,6 +645,34 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
               </property>
              </spacer>
             </item>
+            <item row="9" column="3">
+             <widget class="QToolButton" name="sliceTool">
+              <property name="toolTip">
+               <string>Slice</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resource.qrc">
+                <normaloff>:/imgs/icons/slice.png</normaloff>:/imgs/icons/slice.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="5">
+             <widget class="QToolButton" name="materialTool">
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resource.qrc">
+                <normaloff>:/imgs/icons/fill.png</normaloff>:/imgs/icons/fill.png</iconset>
+              </property>
+              <property name="popupMode">
+               <enum>QToolButton::DelayedPopup</enum>
+              </property>
+             </widget>
+            </item>
            </layout>
           </widget>
          </item>
