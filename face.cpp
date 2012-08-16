@@ -7,8 +7,27 @@ Face::Face(HalfEdge *e1, HalfEdge *e2, HalfEdge *e3){
     this->edge3=e3;
     this->normal=computeNormal((QVector3D*)edge1->getStop(),(QVector3D*)edge2->getStop(),(QVector3D*)edge3->getStop());
     this->goodNormal=false;
-    this->maxZ=qMax(qMax(this->edge1->getStart()->z(),this->edge2->getStart()->z()),this->edge3->getStart()->z());
-    this->minZ=qMin(qMin(this->edge1->getStart()->z(),this->edge2->getStart()->z()),this->edge3->getStart()->z());
+    //find minimum and maximum z vertex
+    //find min
+    if(this->edge1->getStart()->z()<this->edge2->getStart()->z()){
+        this->minZ=this->edge1->getStart();
+    }
+    else{
+        this->minZ=this->edge2->getStart();
+    }
+    if(this->minZ->z()>this->edge3->getStart()->z()){
+        this->minZ=this->edge3->getStart();
+    }
+    //find max
+    if(this->edge1->getStart()->z()>this->edge2->getStart()->z()){
+        this->maxZ=this->edge1->getStart();
+    }
+    else{
+        this->maxZ=this->edge2->getStart();
+    }
+    if(this->maxZ->z()<this->edge3->getStart()->z()){
+        this->maxZ=this->edge3->getStart();
+    }
 }
 
 Face::Face(): edge1(NULL), edge2(NULL), edge3(NULL), normal(NULL){

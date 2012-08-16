@@ -75,6 +75,10 @@ private slots:
 
     void on_materialTool_clicked();
 
+    void on_layerSlider_valueChanged(int value);
+
+    void on_showLayers_toggled(bool checked);
+
 private:
     QList<Material*>* materials;
     Ui::SliceDialog *ui;

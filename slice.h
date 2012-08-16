@@ -3,7 +3,14 @@
 
 #include <QObject>
 #include <face.h>
-
+#include <QtOpenGL>
+#if defined(Q_WS_MAC)
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#elif defined(Q_WS_QWS)
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif
 
 //class for basinc slicing [without gcode generation]
 
@@ -13,10 +20,11 @@ class Slice : public QObject
 public:
     explicit Slice(QObject *parent = 0);
     inline void setLayerHeight(double layer){ layerHeight=layer;}
-    void fillTriLayer(QList<Face*> faces);
+    void fillTriLayer(QHash<QString, Face*> faces);
+    void draw(int layer);
 private:
     //list of triangles in layes
-    QVector< QList<Face*> > triLayer;
+    QList< QList<Face*>* > triLayer;
     //layer height
     double layerHeight;
 signals:

@@ -23,6 +23,8 @@
 #include "face.h"
 //materials
 #include "material.h"
+//slicer
+#include "slice.h"
 
 
 //for sorting q list by angles
@@ -88,11 +90,15 @@ private:
     void render();
     //calculating angle beetwen two QVector3D
     double angle(QVector3D p1, QVector3D p2);
+    //slicer object, it stores info about each of layers
+    Slice* slicer;
 public:
+
     explicit StlObject(QString fileName, QObject *parent = 0);
     explicit StlObject(QObject *parent = 0);
+    inline QHash<QString,Face*> getFaces() {return faces;}
     void copy(StlObject *copyFrom);
-    void draw(bool);
+    void draw(bool,bool,int);
     void select(bool);
     void moveXY(double x, double y);
     void rotate(double angle);

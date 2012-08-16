@@ -4,6 +4,7 @@
 StlObject::StlObject(QObject *parent) :
 QObject(parent)
 {
+    this->slicer=new Slice();
     this->scaleValue=1.0;
     this->rotation=0.0;
     this->selected=false;
@@ -17,6 +18,7 @@ QObject(parent)
 StlObject::StlObject(QString fileName, QObject *parent) :
     QObject(parent)
 {
+    this->slicer=new Slice();
     this->scaleValue=1.0;
     this->rotation=0.0;
     this->selected=false;
@@ -51,6 +53,7 @@ void StlObject::copy(StlObject *copyFrom){
     this->mirrorZ=copyFrom->mirrorZ;
     this->list_index=copyFrom->list_index;
     this->objectMaterial = copyFrom->objectMaterial;
+    this->slicer = copyFrom->slicer;
 }
 
 void StlObject::loadFile(QString fileName){
@@ -218,9 +221,9 @@ void StlObject::loadFile(QString fileName){
         this->offset=QVector3D((xMax+xMin)/2,(yMax+yMin)/2,zMin);
 
         for(i = this->vertexes.begin(); i != this->vertexes.end(); ++i){
-            i.value()->setX((i.value()->x()-this->offset.x())*0.01);
-            i.value()->setY((i.value()->y()-this->offset.y())*0.01);
-            i.value()->setZ((i.value()->z()-this->offset.z())*0.01);
+            i.value()->setX((i.value()->x()-this->offset.x()));
+            i.value()->setY((i.value()->y()-this->offset.y()));
+            i.value()->setZ((i.value()->z()-this->offset.z()));
         }
         this->height=(zMax-zMin)*0.01;
         this->width=(xMax-xMin)*0.01;
@@ -257,6 +260,8 @@ void StlObject::loadFile(QString fileName){
     if(badNormals){
         repairNormals();
     }
+    slicer->setLayerHeight(0.5);
+    slicer->fillTriLayer(this->faces);
     qDebug() << "loading took: " <<myTimer.elapsed();
 }
 
@@ -390,7 +395,7 @@ double StlObject::getRotation(){
     return ((int)this->rotation/5)*5;
 }
 
-void StlObject::draw(bool picking){
+void StlObject::draw(bool picking, bool showLayers, int layerNum){
     GLfloat   reder[4]={1.0,0.0,0.0,1.0};
     GLfloat     ambient[] = { 0.1,   0.1,     0.1,  1.0};
     GLfloat     diffuse[] = {this->objectMaterial->getColor().redF(),  this->objectMaterial->getColor().greenF(),    this->objectMaterial->getColor().blueF(), 1.0};
@@ -421,12 +426,16 @@ void StlObject::draw(bool picking){
     glPushMatrix();
     glTranslatef(0.0+this->offset.x(), 0.0+this->offset.y(), (this->mirrorZ ? getHeight(): 0.0));
 
-    glScalef( (this->mirrorX ? -1.0 : 1.0)*this->scaleValue, (this->mirrorY ? -1.0 : 1.0)*this->scaleValue, (this->mirrorZ ? -1.0 : 1.0)*this->scaleValue);
+    glScalef( (this->mirrorX ? -1.0 : 1.0)*this->scaleValue*0.01, (this->mirrorY ? -1.0 : 1.0)*this->scaleValue*0.01, (this->mirrorZ ? -1.0 : 1.0)*this->scaleValue*0.01);
 
     glRotatef(((int)this->rotation/5)*5, 0.0, 0.0, 1.0);
     //call list
-
-    glCallList(this->list_index);
+    if(picking || !showLayers){
+        glCallList(this->list_index);
+    }
+    else{
+        this->slicer->draw(layerNum);
+    }
     if(!picking){
         //draw bad edges
         glDisable(GL_LIGHTING);
@@ -477,14 +486,14 @@ QList<QVector3D> StlObject::getTriangles(){
         out.append((((*j.value()->getNormal())*matrix)));
         //if mirror change vertex winding order
         if(this->mirrorX ^ this->mirrorY ^ this->mirrorZ){
-            out.append((((*j.value()->getEdge3()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
-            out.append((((*j.value()->getEdge2()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
-            out.append((((*j.value()->getEdge1()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge3()->getStart())*matrix)*(this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge2()->getStart())*matrix)*(this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge1()->getStart())*matrix)*(this->scaleValue))+this->offset*100+zOffset);
         }
         else{
-            out.append((((*j.value()->getEdge1()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
-            out.append((((*j.value()->getEdge2()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
-            out.append((((*j.value()->getEdge3()->getStart())*matrix)*(100*this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge1()->getStart())*matrix)*(this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge2()->getStart())*matrix)*(this->scaleValue))+this->offset*100+zOffset);
+            out.append((((*j.value()->getEdge3()->getStart())*matrix)*(this->scaleValue))+this->offset*100+zOffset);
         }
     }
     return out;

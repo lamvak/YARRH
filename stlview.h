@@ -15,6 +15,7 @@
 #include <QRect>
 #include "stlobject.h"
 #include "material.h"
+#include "slice.h"
 
 class StlView : public QGLWidget
 {
@@ -75,6 +76,8 @@ public slots:
     void mirrorX();
     void mirrorY();
     void mirrorZ();
+    inline void setShowLayers(bool value) { showLayers=value; updateGL(); }
+    void setLayerNum(int value);
 protected:
     void initializeGL();
     void paintGL();
@@ -86,6 +89,8 @@ protected:
     void wheelEvent(QWheelEvent * event);
     void keyPressEvent (QKeyEvent * event);
 private:
+    bool showLayers;
+    int layerNum;
     QMenu* mirrorMenu;
     QAction* mirrorXAction;
     QAction* mirrorYAction;

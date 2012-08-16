@@ -337,3 +337,15 @@ void SliceDialog::on_materialTool_clicked()
         this->stlView->setActiveTool(StlView::FILL);
    }
 }
+
+void SliceDialog::on_layerSlider_valueChanged(int value)
+{
+    ui->currentLayer->setText(QString::number(value));
+    this->stlView->setLayerNum(value);
+}
+
+void SliceDialog::on_showLayers_toggled(bool checked)
+{
+    ui->layerSlider->setEnabled(checked);
+    this->stlView->setShowLayers(checked);
+}

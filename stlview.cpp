@@ -12,6 +12,8 @@
 StlView::StlView(QWidget *parent,const QGLWidget * shareWidget)
     : QGLWidget(QGLFormat(QGL::SampleBuffers), parent, shareWidget)
 {
+    this->layerNum=0;
+    this->showLayers=false;
     zoom = 2.5;
     xMove = 0;
     yMove = 0;
@@ -432,11 +434,23 @@ void StlView::paintGL()
     drawAxis();
     drawGrid();
 
+    if(this->showLayers){
+        GLfloat fCurrentColor[4];
+        glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
+        glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
+        glBegin(GL_QUADS);
+        glVertex3f(-20.0f,-20.0f, this->layerNum*0.005);
+        glVertex3f( 20.0f,-20.0f, this->layerNum*0.005);
+        glVertex3f( 20.0f, 20.0f, this->layerNum*0.005);
+        glVertex3f(-20.0f, 20.0f, this->layerNum*0.005);
+        glEnd();
+        glColor4fv(fCurrentColor);
+    }
     if(this->drawBox){
         drawSelectionBox();
     }
     for(int i=0; i<this->objects.size(); i++){
-        this->objects.values().at(i)->draw(false);
+        this->objects.values().at(i)->draw(false,this->showLayers, this->layerNum);
     }
 }
 
@@ -452,7 +466,7 @@ void StlView::paintPicking(){
     gluLookAt(eyeX, eyeY, eyeZ, -xMove, -yMove, 0.0, upX, upY, upZ);
     for(int i=0; i<this->objects.size(); i++){
         glColor3ub(QColor(this->objects.keys().at(i)).red(),QColor(this->objects.keys().at(i)).green(),QColor(this->objects.keys().at(i)).blue());
-        this->objects.values().at(i)->draw(true);
+        this->objects.values().at(i)->draw(true,this->showLayers, this->layerNum);
     }
     glFlush();
     glColor4fv(fCurrentColor);
@@ -1011,4 +1025,9 @@ void StlView::setActiveTool(int tool){
         this->setCursor(QCursor(QPixmap(":/imgs/icons/fill.png")));
         break;
     }
+}
+
+void StlView::setLayerNum(int value){
+    this->layerNum=value;
+    updateGL();
 }

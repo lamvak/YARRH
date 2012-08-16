@@ -3,11 +3,13 @@
 #include <QVector3D>
 #include <QDebug>
 #include "halfedge.h"
+#include "vertex.h"
 
 
 
 //forward declaration
 class HalfEdge;
+class Vertex;
 //class for faces
 class Face{
 public:
@@ -20,8 +22,8 @@ public:
     inline HalfEdge* getEdge1(){return edge1;}
     inline HalfEdge* getEdge2(){return edge2;}
     inline HalfEdge* getEdge3(){return edge3;}
-    inline double getMaxZ() {return maxZ;}
-    inline double getMinZ() {return minZ;}
+    inline Vertex* getMaxZ() {return maxZ;}
+    inline Vertex* getMinZ() {return minZ;}
     inline bool isNormalGood() {return goodNormal;}
     void addNeighbor(Face* );
     QList<Face*> getNeighbors();
@@ -33,8 +35,8 @@ private:
     HalfEdge* edge1;
     HalfEdge* edge2;
     HalfEdge* edge3;
-    double maxZ;
-    double minZ;
+    Vertex* maxZ;
+    Vertex* minZ;
     QVector3D* normal;
     QList<Face*> neighbors;
     bool goodNormal;
