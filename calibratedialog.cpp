@@ -62,8 +62,8 @@ void CalibrateDialog::setEStepsPerMm(double value){
 
 void CalibrateDialog::on_calibrateXBtn_clicked()
 {
-    bool okM1;
-    bool okM2;
+    bool okM1=false;
+    bool okM2=false;
     emit writeToPrinter("G28 X0");
     emit writeToPrinter("M92 X"+ui->xCurrentSteps->text());
     double currentStepsPerMm = ui->xCurrentSteps->text().toDouble();
@@ -102,8 +102,8 @@ void CalibrateDialog::on_calibrateXBtn_clicked()
 
 void CalibrateDialog::on_calibrateYBtn_clicked()
 {
-    bool okM1;
-    bool okM2;
+    bool okM1=false;
+    bool okM2=false;
     emit writeToPrinter("G28 Y0");
     emit writeToPrinter("M92 Y"+ui->yCurrentSteps->text());
     double currentStepsPerMm = ui->yCurrentSteps->text().toDouble();
@@ -142,8 +142,8 @@ void CalibrateDialog::on_calibrateYBtn_clicked()
 
 void CalibrateDialog::on_calibrateZBtn_clicked()
 {
-    bool okM1;
-    bool okM2;
+    bool okM1=false;
+    bool okM2=false;
     emit writeToPrinter("G28 Z0");
     emit writeToPrinter("M92 Z"+ui->zCurrentSteps->text());
     double currentStepsPerMm = ui->zCurrentSteps->text().toDouble();

@@ -184,9 +184,8 @@ void Printer::retrackt(int lenght, int speed){
 //calculate checksum of command
 QString Printer::checkSum(QString command){
     int cs = 0;
-    QByteArray cmd=command.toAscii();
-    for(int i = 0; cmd.at(i) != '*' && i<cmd.size(); i++)
-       cs = cs ^ cmd.at(i);
+    for(int i = 0; command.at(i) != '*' && i<command.size(); i++)
+       cs = cs ^ command.at(i).toAscii();
     cs &= 0xff;
     return QString::number(cs);
 }
