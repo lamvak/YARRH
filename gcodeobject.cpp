@@ -1,7 +1,12 @@
 ﻿#include "gcodeobject.h"
 #include <QtOpenGL>
-#include <GL/glu.h>
+#if defined(Q_WS_MAC)
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#elif defined(Q_WS_WIN)
 #include <GL/gl.h>
+#include <GL/glu.h>
+#endif
 
 GCodeObject::GCodeObject(QObject *parent)
 {

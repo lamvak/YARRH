@@ -299,7 +299,7 @@ void MainWindow::on_printBtn_clicked(){
     if(printerObj->isConnected()){
         this->startTime=QTime::currentTime();
         ui->inConsole->appendPlainText(tr(QString("Print started at "+ this->startTime.toString("hh:mm:ss")).toAscii()));
-        QMetaObject::invokeMethod(printerObj,"loadToBuffer",Qt::QueuedConnection,Q_ARG(QStringList, this->gcodeLines), Q_ARG(bool, true));
+        //QMetaObject::invokeMethod(printerObj,"loadToBuffer",Qt::QueuedConnection,Q_ARG(QStringList, this->gcodeLines), Q_ARG(bool, true));
         ui->progressBar->setMaximum(this->gcodeLines.size());
         QMetaObject::invokeMethod(printerObj,"startPrint",Qt::QueuedConnection);
         ui->pauseBtn->setEnabled(true);

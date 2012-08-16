@@ -186,7 +186,10 @@ QString Printer::checkSum(QString command){
     int cs = 0;
     int i = 0;
     if(command.size()>0){
-        for(i = 0; command.at(i) != '*' && i<command.size(); i++){
+        for(i = 0;i<command.size(); i++){
+            if(command.at(i)=='*'){
+                break;
+            }
            cs = cs ^ command.at(i).toAscii();
         }
         cs &= 0xff;
