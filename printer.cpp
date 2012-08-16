@@ -184,9 +184,16 @@ void Printer::retrackt(int lenght, int speed){
 //calculate checksum of command
 QString Printer::checkSum(QString command){
     int cs = 0;
-    for(int i = 0; command.at(i) != '*' && i<command.size(); i++)
-       cs = cs ^ command.at(i).toAscii();
-    cs &= 0xff;
+    int i = 0;
+    if(command.size()>0){
+        for(i = 0; command.at(i) != '*' && i<command.size(); i++){
+           cs = cs ^ command.at(i).toAscii();
+        }
+        cs &= 0xff;
+    }
+    else{
+        qDebug() << "Error: empty command:" << command;
+    }
     return QString::number(cs);
 }
 
