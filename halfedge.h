@@ -27,6 +27,7 @@ public:
     void removeFace(Face* face);
     void setTwin(HalfEdge* twin);
     double angleBeetwen(HalfEdge* second);
+    bool crosesZPLane(double z);
 private:
     //twin of this edge
     HalfEdge *twin;
@@ -34,6 +35,8 @@ private:
     QList<Face*> faces;
     Vertex* start;
     Vertex* stop;
+    Vertex* zMax;
+    Vertex* zMin;
     QString hash;
 };
 

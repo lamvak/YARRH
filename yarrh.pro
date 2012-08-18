@@ -31,7 +31,8 @@ SOURCES += main.cpp\
     halfedge.cpp \
     vertex.cpp \
     slice.cpp \
-    material.cpp
+    material.cpp \
+    clipper/clipper.cpp
 
 HEADERS  += mainwindow.h \
     glwidget.h \
@@ -52,7 +53,8 @@ HEADERS  += mainwindow.h \
     halfedge.h \
     vertex.h \
     slice.h \
-    material.h
+    material.h \
+    clipper/clipper.hpp
 
 FORMS    += mainwindow.ui \
     aboutwindow.ui \
@@ -85,6 +87,8 @@ OBJECTS_DIR = build
 MOC_DIR = build
 UI_DIR = build
 RCC_DIR = build
+
+
 
 
 

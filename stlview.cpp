@@ -439,18 +439,18 @@ void StlView::paintGL()
     drawAxis();
     drawGrid();
 
-    if(this->showLayers){
-        GLfloat fCurrentColor[4];
-        glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
-        glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
-        glBegin(GL_QUADS);
-        glVertex3f(-20.0f,-20.0f, this->layerNum*0.005);
-        glVertex3f( 20.0f,-20.0f, this->layerNum*0.005);
-        glVertex3f( 20.0f, 20.0f, this->layerNum*0.005);
-        glVertex3f(-20.0f, 20.0f, this->layerNum*0.005);
-        glEnd();
-        glColor4fv(fCurrentColor);
-    }
+//    if(this->showLayers){
+//        GLfloat fCurrentColor[4];
+//        glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
+//        glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
+//        glBegin(GL_QUADS);
+//        glVertex3f(-20.0f,-20.0f, this->layerNum*0.005);
+//        glVertex3f( 20.0f,-20.0f, this->layerNum*0.005);
+//        glVertex3f( 20.0f, 20.0f, this->layerNum*0.005);
+//        glVertex3f(-20.0f, 20.0f, this->layerNum*0.005);
+//        glEnd();
+//        glColor4fv(fCurrentColor);
+//    }
     if(this->drawBox){
         drawSelectionBox();
     }

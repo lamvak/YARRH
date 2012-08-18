@@ -22,6 +22,7 @@ public:
     inline HalfEdge* getEdge1(){return edge1;}
     inline HalfEdge* getEdge2(){return edge2;}
     inline HalfEdge* getEdge3(){return edge3;}
+    QList< HalfEdge* > getEdgesCrossingPlane(double z, HalfEdge* remove=NULL );
     inline Vertex* getMaxZ() {return maxZ;}
     inline Vertex* getMinZ() {return minZ;}
     inline bool isNormalGood() {return goodNormal;}

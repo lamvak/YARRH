@@ -108,3 +108,18 @@ QString Face::getHash(){
     out.append(QString::number(edges.at(0))+QString::number(edges.at(1))+QString::number(edges.at(2)));
     return out;
 }
+
+
+QList< HalfEdge* > Face::getEdgesCrossingPlane(double z, HalfEdge* remove){
+    QList< HalfEdge* > out;
+    if(this->edge1->crosesZPLane(z) && this->edge1!=remove){
+        out.append(edge1);
+    }
+    if(this->edge2->crosesZPLane(z)&& this->edge2!=remove){
+        out.append(edge2);
+    }
+    if(this->edge3->crosesZPLane(z)&& this->edge3!=remove){
+        out.append(edge3);
+    }
+    return out;
+}

@@ -6,6 +6,14 @@ HalfEdge::HalfEdge(Vertex* start, Vertex* stop){
     this->stop=stop;
     this->hash=computeHash();
     this->twin=NULL;
+    if(start->z()>stop->z()){
+        this->zMax=start;
+        this->zMin=stop;
+    }
+    else{
+        this->zMax=stop;
+        this->zMin=start;
+    }
 }
 
 HalfEdge::HalfEdge(): start(NULL), stop(NULL){
@@ -41,6 +49,10 @@ void HalfEdge::setTwin(HalfEdge *twin){
 
 void HalfEdge::removeFace(Face* face){
     this->faces.removeAt(this->faces.indexOf(face));
+}
+
+bool HalfEdge::crosesZPLane(double z){
+    return zMax->z()>=z && zMin->z()<z;
 }
 
 double HalfEdge::angleBeetwen(HalfEdge *second){

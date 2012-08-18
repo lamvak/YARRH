@@ -161,11 +161,23 @@ void Printer::getTemperature(){
 }
 
 void Printer::setTemp1(int temp){
-    send_now("M104 S"+QString::number(temp));
+    if(!this->isPrinting){
+        this->writeToPort("M110", -1, true);
+        send("M104 S"+QString::number(temp));
+    }
+    else{
+        send_now("M104 S"+QString::number(temp));
+    }
 }
 
 void Printer::setTemp3(int temp){
-    send_now("M140 S"+QString::number(temp));
+    if(!this->isPrinting){
+        this->writeToPort("M110", -1, true);
+        send("M140 S"+QString::number(temp));
+    }
+    else{
+        send_now("M140 S"+QString::number(temp));
+    }
 }
 
 void Printer::extrude(int lenght, int speed){
@@ -281,6 +293,9 @@ int Printer::writeToPort(QString command,int lineNum, bool calcCheckSum){
             command=command+QString("*")+checkSum(command);
             if(!command.contains("M110")){
                 this->sentLines.append(command);
+            }
+            else{
+                this->lineNum=0;
             }
 //            int temp=rand()%10;
 //            if(temp==0){
