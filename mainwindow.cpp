@@ -191,7 +191,7 @@ void MainWindow::loadFile(QString fileName){
     //else just load gcode
     else{
         //show filename in ui
-        ui->groupBox_4->setTitle(tr("File")+" :"+fileName.right(fileName.length()-fileName.lastIndexOf("/")-1));
+        ui->groupBox_4->setTitle(tr("File")+": "+fileName.right(fileName.length()-fileName.lastIndexOf("/")-1));
         //open file
         QFile file(fileName);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
