@@ -78,10 +78,30 @@ void StlObject::loadFile(QString fileName){
         Face *face;
         float nx, ny, nz, x1, x2, x3, y1, y2, y3, z1, z2, z3;
         QString line;
-        line=file->readLine();
-        line.remove("\r");
-        //ascii file
-        if(line.contains("solid")){
+        QString mode="ascii";
+        qint64 size=file->size();
+        if(size<80+4){
+            mode="ascii";
+        }
+        QDataStream in2(file);
+        in2.setByteOrder(QDataStream::LittleEndian);
+        in2.setFloatingPointPrecision(QDataStream::SinglePrecision);
+        qint32 ntriangles;
+        file->seek(80);
+        in2 >> ntriangles;
+        qint64 expected_size= 80+4+ntriangles*(4*4*3+2);
+        qDebug() << "size" << size << "expected" << expected_size;
+        if(size==expected_size){
+            mode="binary";
+        }
+        else{
+            mode="ascii";
+            file->seek(0);
+            line=file->readLine();
+            line.remove("\r");
+        }
+
+        if(mode=="ascii"){
             qDebug() << "ascii";
             while(!file->atEnd()){
                 line=file->readLine();
@@ -260,8 +280,8 @@ void StlObject::loadFile(QString fileName){
     if(badNormals){
         repairNormals();
     }
-    slicer->setLayerHeight(0.5);
-    slicer->fillTriLayer(this->faces);
+    //slicer->setLayerHeight(0.5);
+    //slicer->fillTriLayer(this->faces);
     qDebug() << "loading took: " <<myTimer.elapsed();
 }
 
@@ -288,7 +308,7 @@ void StlObject::render(){
 Vertex* StlObject::addVertex(float x, float y, float z){
     Vertex* out;
     //merging close vetreces so stiching algorythm have less work
-    float threshold=0.002;
+    float threshold=0.0001;
     float roundedX=(int)(x/threshold)*threshold;
     float roundedY=(int)(y/threshold)*threshold;
     float roundedZ=(int)(z/threshold)*threshold;

@@ -6,9 +6,6 @@
 #elif defined(Q_WS_WIN)
 #include <GL/gl.h>
 #include <GL/glu.h>
-#elif defined(Q_WS_X11)
-#include <GL/gl.h>
-#include <GL/glu.h>
 #endif
 #include <math.h>
 #include "glwidget.h"
@@ -405,7 +402,6 @@ void GlWidget::setCurrentLayer(int layer){
        winX = (float)x;
        winY = (float)viewport[3] - (float)y;
        glReadPixels( x, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
-       qDebug() << winX << winY << winZ;
        gluUnProject( winX, winY,  winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
      return QPointF(posX,posY);

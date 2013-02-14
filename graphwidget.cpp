@@ -67,13 +67,12 @@ void GraphWidget::paintEvent(QPaintEvent *event)
 {
         int i=0;
         QPainter p(this);       
-
         p.fillRect(this->rect(), QColor(78,78,127));
         p.setRenderHint(QPainter::Antialiasing, false);
         //draw t1 //could make some loop but mehh...
 
         //draw horizontal scale
-        p.setPen(QColor(179,179,179));
+        p.setPen(QPen(QColor(179,179,179),1));
         for(int i=0; i<=300; i+=50){
             p.drawLine( 1, yToCanvY(i), this->width(), yToCanvY(i) );
         }
@@ -81,20 +80,20 @@ void GraphWidget::paintEvent(QPaintEvent *event)
             p.drawLine( qRound(xToCanvX(i)-trans.x()), 1, qRound(xToCanvX(i)-trans.x()), this->height() );
         }
 
-        p.setPen(QColor(166,4,0));
+        p.setPen(QPen(QColor(166,4,0),2));
         p.drawLine( 1, yToCanvY(t1->target()), this->width(), yToCanvY(t1->target()) );
 
-        p.setPen(QColor(166,163,0));
+        p.setPen(QPen(QColor(166,163,0),2));
         p.drawLine( 1, yToCanvY(t2->target()), this->width(), yToCanvY(t2->target()) );
 
-        p.setPen(QColor(0,130,9));
+        p.setPen(QPen(QColor(0,130,9),2));
         p.drawLine( 1, yToCanvY(t3->target()), this->width(), yToCanvY(t3->target()) );
         p.setRenderHint(QPainter::Antialiasing, true);
 
         if (t1->size()>0){
             for (i=1; i<t1->size(); i++)
             {
-                p.setPen(QColor(qMin(255,(int)((double)255*((*t1)[i-1].y()/(t1->target()+1)))),0,255-qMin(255,(int)((double)255*((*t1)[i-1].y()/(t1->target()+1))))));
+                p.setPen(QPen(QColor(qMin(255,(int)((double)255*((*t1)[i-1].y()/(t1->target()+1)))),0,255-qMin(255,(int)((double)255*((*t1)[i-1].y()/(t1->target()+1))))),2));
                 p.drawLine( xToCanvX((*t1)[i-1].x()), yToCanvY((*t1)[i-1].y()),
                             xToCanvX((*t1)[i].x()), yToCanvY((*t1)[i].y()) );
             }
@@ -111,7 +110,7 @@ void GraphWidget::paintEvent(QPaintEvent *event)
         if (t3->size()>0){
             for (i=1; i<t3->size(); i++)
             {
-                p.setPen(QColor(0,qMin(255,(int)((double)255*((*t3)[i].y()/(t3->target()+1)))),255-qMin(255,(int)((double)255*((*t3)[i].y()/(t3->target()+1))))));
+                p.setPen(QPen(QColor(0,qMin(255,(int)((double)255*((*t3)[i].y()/(t3->target()+1)))),255-qMin(255,(int)((double)255*((*t3)[i].y()/(t3->target()+1))))),2));
                     p.drawLine( xToCanvX((*t3)[i-1].x()), yToCanvY((*t3)[i-1].y()),
                                             xToCanvX((*t3)[i].x()), yToCanvY((*t3)[i].y()) );
             }

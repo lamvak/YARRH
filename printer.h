@@ -42,14 +42,22 @@ private:
      QStringList mainQuery;
      int lineNum;
      int resendFrom;
+     //SD stuff
+     QStringList sdFiles;
+     bool updatingFileList;
+     bool sdPrint;
+     bool uploadingToSD;
+     QString uploadedFileName;
 public:
     explicit Printer(QObject *parent = 0);
     bool isConnected();
+    bool isPrintingFromSD();
     bool getIsPrinting();
 signals:
     void write_to_console(QString);
     void currentTemp(double,double,double);
-    void progress(int);
+    void progress(int,int);
+    void uploadProgress(int,int);
     void currentPosition(QVector3D);
     void connected(bool);
     void newResponce(QString);
@@ -57,6 +65,8 @@ signals:
     void settingTemp3(double);
     void printFinished(bool);
     void clearToSend();
+    //SD card stuff
+    void SDFileList(QStringList);
 private slots:
     void processResponce(QString);
 public slots:
@@ -73,6 +83,13 @@ public slots:
     void homeY();
     void homeZ();
     void homeAll();
+    //SD card stuff
+    void getSDFilesList();
+    void uploadToSD(QString filename, QStringList data);
+    void selectSDFile(QString filename);
+    void startResumeSdPrint();
+    void pauseSDPrint();
+    void set_isSdPrinting(bool);
     //move head x/y
     void moveHead(QPoint point, int speed);
     //move head Z
@@ -93,6 +110,8 @@ public slots:
     void send(QString command);
     void send_now(QString command);
     void send_next();
+
+
 };
 
 #endif // PRINTER_H

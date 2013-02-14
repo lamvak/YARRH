@@ -52,7 +52,7 @@ void HalfEdge::removeFace(Face* face){
 }
 
 bool HalfEdge::crosesZPLane(double z){
-    return zMax->z()>=z && zMin->z()<z;
+    return (zMax->z()>=z && zMin->z()<=z) && (zMin->z()!=zMax->z());
 }
 
 double HalfEdge::angleBeetwen(HalfEdge *second){

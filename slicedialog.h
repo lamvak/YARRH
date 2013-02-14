@@ -35,6 +35,7 @@ private slots:
     void on_sliceBtn_clicked();
     void slicingFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void updateStatus();
+    void updateErrors();
     void setOffset(QPointF);
     void rotateObject(int);
     void scaleObject(int);

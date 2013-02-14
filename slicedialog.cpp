@@ -8,6 +8,7 @@ SliceDialog::SliceDialog(const QGLWidget * shareWidget, QWidget *parent) :
     ui->setupUi(this);
     this->stlView = new StlView(ui->stlViewWidget,shareWidget);
     ui->stlViewWidget->layout()->addWidget(this->stlView);
+    this->stlView->setAcceptDrops(true);
     connect(this->stlView, SIGNAL(selectedRotation(int)), this, SLOT(objectRotated(int)));
     connect(this->stlView, SIGNAL(selectedScale(int)), this, SLOT(objectScaled(int)));
     connect(this->stlView, SIGNAL(progress(int,int,QString)), this, SLOT(updateProgress(int,int,QString)));
@@ -30,6 +31,8 @@ SliceDialog::SliceDialog(const QGLWidget * shareWidget, QWidget *parent) :
     ui->loaderLabel->setMovie(movie);
     movie->start();
     this->lastRot=ui->rotationsSpinBox->value();
+    //hide experimental stuff
+    ui->sliceBox->hide();
 }
 
 void SliceDialog::setOffset(QPointF point){
@@ -136,7 +139,6 @@ void SliceDialog::on_sliceBtn_clicked()
         QFile::remove(this->outputFile);
     }
     if(this->outputFile!=""){
-        arguments.append(stlFile);
         arguments.append("--load");
         arguments.append(this->configPath+"/"+ui->confCombo->currentText());
         arguments.append("--output");
@@ -147,8 +149,11 @@ void SliceDialog::on_sliceBtn_clicked()
         arguments.append(QString::number(ui->layerHeight->value()));
         arguments.append("--fill-density");
         arguments.append(QString::number((double)ui->fillDensity->value()/100));
+        arguments.append(stlFile);
+        qDebug() << arguments;
         this->slicerProcess = new QProcess(this);
         connect(this->slicerProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(updateStatus()));
+        connect(this->slicerProcess, SIGNAL(readyReadStandardError()), this, SLOT(updateErrors()));
         connect(this->slicerProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(slicingFinished(int,QProcess::ExitStatus)));
         slicerProcess->start(this->slicerPath,arguments);
         ui->consoleGroup->show();
@@ -164,7 +169,11 @@ void SliceDialog::slicingFinished(int exitCode, QProcess::ExitStatus exitStatus)
 }
 
 void SliceDialog::updateStatus(){
-    ui->console->appendPlainText(this->slicerProcess->readAllStandardOutput().trimmed());
+    ui->console->appendPlainText(""+this->slicerProcess->readAllStandardOutput().trimmed()+"");
+}
+
+void SliceDialog::updateErrors(){
+   ui->console->appendPlainText(""+this->slicerProcess->readAllStandardError().trimmed()+"");
 }
 
 void SliceDialog::setTableSize(int x, int y){

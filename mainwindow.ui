@@ -190,6 +190,9 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
        </property>
        <item row="0" column="0">
         <widget class="QPlainTextEdit" name="inConsole">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
          <property name="maximumBlockCount">
           <number>50</number>
          </property>
@@ -1127,6 +1130,18 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="macroGroup">
+         <property name="title">
+          <string>Macros</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <property name="margin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -1161,6 +1176,8 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
      <string>File</string>
     </property>
     <addaction name="actionLoad"/>
+    <addaction name="actionLoad_STL"/>
+    <addaction name="actionSD_Card"/>
    </widget>
    <widget class="QMenu" name="menuO_Programie">
     <property name="title">
@@ -1174,6 +1191,7 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
     </property>
     <addaction name="actionOptions"/>
     <addaction name="actionCalibrate_printer"/>
+    <addaction name="actionMacros"/>
    </widget>
    <addaction name="menuPlik"/>
    <addaction name="menuSettings"/>
@@ -1181,7 +1199,7 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
   </widget>
   <action name="actionLoad">
    <property name="text">
-    <string>Load</string>
+    <string>Load GCODE</string>
    </property>
   </action>
   <action name="actionO_Programie">
@@ -1193,10 +1211,38 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
    <property name="text">
     <string>Calibrate printer</string>
    </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionOptions">
    <property name="text">
     <string>Options</string>
+   </property>
+  </action>
+  <action name="actionMacros">
+   <property name="text">
+    <string>Macros</string>
+   </property>
+  </action>
+  <action name="actionLoad_STL">
+   <property name="text">
+    <string>Load STL</string>
+   </property>
+  </action>
+  <action name="actionPrint_from_SD">
+   <property name="text">
+    <string>Print from SD</string>
+   </property>
+  </action>
+  <action name="actionLoad_from_SD">
+   <property name="text">
+    <string>Load from SD</string>
+   </property>
+  </action>
+  <action name="actionSD_Card">
+   <property name="text">
+    <string>SD Card</string>
    </property>
   </action>
  </widget>

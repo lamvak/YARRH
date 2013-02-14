@@ -22,6 +22,17 @@ MainWindow::MainWindow(QWidget *parent) :
     this->sliceDialog = new SliceDialog(ui->glWidget, this);
     this->sliceDialog->hide();
     this->sliceDialog->move(this->geometry().center()-this->sliceDialog->geometry().center());
+    //macros window
+    this->macrosWindow = new MacrosWindow();
+    this->macrosWindow->hide();
+    this->macrosWindow->move(this->geometry().center()-this->macrosWindow->geometry().center());
+    connect(this->macrosWindow, SIGNAL(buttonAdded(MacroButton*)), this, SLOT(addMacroBtn(MacroButton*)));
+    connect(this->macrosWindow, SIGNAL(buttonRemoved(MacroButton*)), this, SLOT(removeMacroBtn(MacroButton*)));
+    //sd card window
+    this->sdCardWindow = new SDCardWindow();
+    this->sdCardWindow->hide();
+    this->sdCardWindow->move(this->geometry().center()-this->sdCardWindow->geometry().center());
+    connect(this->sdCardWindow, SIGNAL(sdFile_selected(QString)), this, SLOT(sdFile_selected(QString)));
     connect(this->optionDialog, SIGNAL(slicerPathChanged(QString)), this->sliceDialog, SLOT(updateSlicerPath(QString)));
     connect(this->optionDialog, SIGNAL(outputPathChanged(QString)), this->sliceDialog, SLOT(updateOutputPath(QString)));
     connect(this->optionDialog, SIGNAL(newSize(QVector3D)), this, SLOT(updatadeSize(QVector3D)));
@@ -36,8 +47,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //connecting ui to printer
     connect(printerObj, SIGNAL(write_to_console(QString)), ui->inConsole, SLOT(appendPlainText(QString)), Qt::QueuedConnection);
+    connect(this->macrosWindow, SIGNAL(writeToPrinter(QString)), printerObj, SLOT(send_now(QString)),Qt::QueuedConnection);
     connect(ui->fanSpinBox, SIGNAL(valueChanged(int)), printerObj, SLOT(setFan(int)), Qt::QueuedConnection);
     ui->fanSpinBox->blockSignals(true);
+    connect(this->printerObj, SIGNAL(SDFileList(QStringList)), this->sdCardWindow, SLOT(updateFileList(QStringList)));
+    connect(this->printerObj, SIGNAL(uploadProgress(int,int)), this->sdCardWindow, SLOT(updateProgress(int,int)));
+    this->sdCardWindow->setPrinter(this->printerObj);
     //connecting move btns
     connect(ui->homeX, SIGNAL(clicked()), printerObj, SLOT(homeX()), Qt::QueuedConnection);
     connect(ui->homeY, SIGNAL(clicked()), printerObj, SLOT(homeY()), Qt::QueuedConnection);
@@ -46,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->graphGroupBox, SIGNAL(toggled(bool)), printerObj, SLOT(setMonitorTemperature(bool)),Qt::QueuedConnection);
     //connect printer to temp widget
     connect(printerObj, SIGNAL(currentTemp(double,double,double)), this, SLOT(drawTemp(double,double,double)));
-    connect(printerObj, SIGNAL(progress(int)), this, SLOT(updateProgress(int)));
+    connect(printerObj, SIGNAL(progress(int,int)), this, SLOT(updateProgress(int,int)));
     connect(printerObj, SIGNAL(connected(bool)), this, SLOT(printerConnected(bool)));
     //setting ui temp from gcode
     connect(printerObj, SIGNAL(settingTemp1(double)), this, SLOT(setTemp1FromGcode(double)));
@@ -89,6 +104,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->headControlWidget->hidePoints(true);
     ui->temperatureGroupBox->setDisabled(true);
     this->calibrateDialog->setDisabled(true);
+    ui->macroGroup->setDisabled(true);
     ui->progressBar->hide();
     ui->baudCombo->addItem("1200", BAUD1200);
     ui->baudCombo->addItem("2400", BAUD2400);
@@ -121,7 +137,7 @@ void MainWindow::on_connectBtn_toggled(bool connect)
         QMetaObject::invokeMethod(printerObj,"connectPort",Qt::QueuedConnection,Q_ARG(QString, ui->portCombo->currentText()),Q_ARG(int,ui->baudCombo->itemData(ui->baudCombo->currentIndex()).toInt()));
     }
     else{
-        QMetaObject::invokeMethod(printerObj,"stopPrint",Qt::QueuedConnection);
+        ui->pauseBtn->setChecked(true);
         QMetaObject::invokeMethod(printerObj,"disconnectPort",Qt::QueuedConnection);
     }
 }
@@ -135,13 +151,13 @@ void MainWindow::printerConnected(bool connected){
             ui->headControlWidget->hidePoints(false);
             ui->temperatureGroupBox->setDisabled(false);
             this->calibrateDialog->setDisabled(false);
+            ui->macroGroup->setDisabled(false);
+            //ui->printBtn->setEnabled(true);
             if(this->gcodeLines.size()>0){
                 if(ui->progressBar->value()>0){
                     ui->pauseBtn->setEnabled(true);
                 }
-                if(ui->pauseBtn->text()!=tr("Resume")){
-                    ui->printBtn->setEnabled(true);
-                }
+                ui->printBtn->setEnabled(true);
             }
             if(this->calibrateDialog->autoCalibrateX()){
                 this->printerObj->writeToPort("M92 X"+QString::number(this->calibrateDialog->getCallibrationsSetting().x()),false);
@@ -164,6 +180,7 @@ void MainWindow::printerConnected(bool connected){
         ui->headControlWidget->hidePoints(true);
         ui->temperatureGroupBox->setDisabled(true);
         this->calibrateDialog->setDisabled(true);
+        ui->macroGroup->setDisabled(true);
 
         ui->printBtn->setEnabled(false);
         ui->pauseBtn->setEnabled(false);
@@ -173,25 +190,13 @@ void MainWindow::printerConnected(bool connected){
 //loading file
 void MainWindow::loadFile(QString fileName){
     if(fileName==""){
-        fileName = QFileDialog::getOpenFileName(this, tr("Open file"), this->lastOpendDir, tr("Print files (*.g *.gcode *.stl)"));
+        fileName = QFileDialog::getOpenFileName(this, tr("Open file"), this->lastOpendDir, tr("GCODE files (*.g *.gcode)"));
+    }
+    if(fileName!=""){
         this->lastOpendDir=fileName.left(fileName.lastIndexOf("/"));
         this->sliceDialog->setLastDir(this->lastOpendDir);
-    }
-    // if its stl then open slice window
-    if(fileName.endsWith(".stl",Qt::CaseInsensitive)){
-        this->sliceDialog->move(QPoint(this->geometry().center().x()-this->sliceDialog->width()/2,this->geometry().center().y()-this->sliceDialog->height()/2));
-        this->sliceDialog->show();
-        this->sliceDialog->updateStlView();
-        this->sliceDialog->updateConfigs(this->optionDialog->getConfigDir());
-        //this->sliceDialog->clearObjects();
-
-
-        this->sliceDialog->addObject(fileName);
-    }
-    //else just load gcode
-    else{
         //show filename in ui
-        ui->groupBox_4->setTitle(tr("File")+": "+fileName.right(fileName.length()-fileName.lastIndexOf("/")-1));
+        ui->groupBox_4->setTitle(tr("File")+" :"+fileName.right(fileName.length()-fileName.lastIndexOf("/")-1));
         //open file
         QFile file(fileName);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -249,8 +254,11 @@ void MainWindow::loadFile(QString fileName){
                 z=(qreal)temp.mid(temp.indexOf("Z")+1,temp.indexOf(" ",temp.indexOf("Z"))-temp.indexOf("Z")).toFloat();
                 if(z>prevZ){
                     layerCount++;
+                    prevZ=z;
                 }
-                prevZ=z;
+                if(z<prevZ){
+                    //qDebug() << "going down?";
+                }
             }
             if(temp.contains("X") || temp.contains("Y") || temp.contains("Z")){
                 if(temp.contains("E") || temp.contains("A")){
@@ -291,6 +299,9 @@ void MainWindow::loadFile(QString fileName){
         this->lastZ=0;
         ui->glWidget->setCurrentLayer(0);
         ui->headControlWidget->resetLayer();
+        if(printerObj->isConnected()){
+            QMetaObject::invokeMethod(printerObj,"set_isSdPrinting", Qt::DirectConnection,Q_ARG(bool,false));
+        }
     }
 }
 
@@ -299,9 +310,19 @@ void MainWindow::on_printBtn_clicked(){
     if(printerObj->isConnected()){
         this->startTime=QTime::currentTime();
         ui->inConsole->appendPlainText(tr(QString("Print started at "+ this->startTime.toString("hh:mm:ss")).toAscii()));
-        QMetaObject::invokeMethod(printerObj,"loadToBuffer",Qt::DirectConnection,Q_ARG(QStringList, this->gcodeLines), Q_ARG(bool, true));
-        ui->progressBar->setMaximum(this->gcodeLines.size());
-        QMetaObject::invokeMethod(printerObj,"startPrint",Qt::QueuedConnection);
+
+        //normal print
+        if(!printerObj->isPrintingFromSD()){
+            QMetaObject::invokeMethod(printerObj,"loadToBuffer",Qt::DirectConnection,Q_ARG(QStringList, this->gcodeLines), Q_ARG(bool, true));
+            ui->progressBar->setMaximum(this->gcodeLines.size());
+            QMetaObject::invokeMethod(printerObj,"startPrint",Qt::QueuedConnection);
+        }
+        //sd print
+        else{
+            QMetaObject::invokeMethod(printerObj,"send_now",Qt::QueuedConnection,Q_ARG(QString, "M26 S0"));
+            QMetaObject::invokeMethod(printerObj,"startResumeSdPrint",Qt::QueuedConnection);
+        }
+
         ui->pauseBtn->setEnabled(true);
         //disable pause btn
         ui->pauseBtn->setEnabled(true);
@@ -317,6 +338,7 @@ void MainWindow::on_printBtn_clicked(){
 
         //disable axis control while printing
         ui->axisControlGroup->setDisabled(true);
+        ui->macroGroup->setDisabled(true);
         ui->headControlWidget->hidePoints(true);
         this->lastZ=0;
         this->currentLayer=0;
@@ -346,16 +368,27 @@ void MainWindow::on_pauseBtn_toggled(bool pause){
     if(pause){
         ui->pauseBtn->setText(tr("Resume"));
         ui->pauseBtn->setIcon(QIcon(":/imgs/icons/resume.png"));
-        QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
+        if(!printerObj->isPrintingFromSD()){
+            QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
+        }
+        else{
+            QMetaObject::invokeMethod(printerObj,"pauseSDPrint");
+        }
     }
     else{
         ui->pauseBtn->setText(tr("Pause"));
         ui->pauseBtn->setIcon(QIcon(":/imgs/icons/pause.png"));
-        QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
+        if(!printerObj->isPrintingFromSD()){
+            QMetaObject::invokeMethod(printerObj,"pausePrint", Qt::DirectConnection,Q_ARG(bool, pause));
+        }
+        else{
+            QMetaObject::invokeMethod(printerObj,"startResumeSdPrint");
+        }
     }
     ui->axisControlGroup->setDisabled(!pause);
     ui->headControlWidget->hidePoints(!pause);
     this->calibrateDialog->setDisabled(!pause);
+    ui->macroGroup->setDisabled(!pause);
     ui->printBtn->setEnabled(pause);
 }
 
@@ -363,20 +396,25 @@ void MainWindow::on_pauseBtn_toggled(bool pause){
 
 void MainWindow::drawTemp(double t1, double t2, double hb){
     ui->tempGraphWidget->addMeasurment(t1,t2,hb,QDateTime::currentMSecsSinceEpoch()/1000);
-    ui->t1Label->setText(QString::number(t1)+" Â°C");
-    ui->t3Label->setText(QString::number(hb)+" Â°C");
+    ui->t1Label->setText(QString::number(t1)+" °C");
+    ui->t3Label->setText(QString::number(hb)+" °C");
 }
 
 //update print progress
-void MainWindow::updateProgress(int progress){
-    ui->progressBar->setValue(ui->progressBar->maximum()-progress);
+void MainWindow::updateProgress(int progress, int maximum){
+    if(maximum>0){
+        ui->progressBar->setMaximum(maximum);
+        progress=maximum-progress;
+    }
+        ui->progressBar->setValue(ui->progressBar->maximum()-progress);
+
     //calculating ETA
     this->durationTime=QTime(0,0,0);
 
     this->durationTime=this->durationTime.addSecs(startTime.secsTo(QTime::currentTime()));
 
-    float linesPerSec=(float)ui->progressBar->value()/(float)startTime.secsTo(QTime::currentTime());
-    this->eta=QTime(0,0,0).addSecs((int)((float)progress/linesPerSec));
+    qreal linesPerSec=(qreal)ui->progressBar->value()/(qreal)startTime.secsTo(QTime::currentTime());
+    this->eta=QTime(0,0,0).addSecs((qint64)((qreal)progress/linesPerSec));
     this->eta=this->eta.addSecs(startTime.secsTo(QTime::currentTime()));
 
     ui->progressBar->setFormat(tr("Layer %1/%2 ").arg(this->currentLayer).arg(ui->layerScrollBar->maximum()-1)+this->durationTime.toString("hh:mm:ss")+"/"+this->eta.toString("hh:mm:ss")+" %p%");
@@ -481,12 +519,15 @@ void MainWindow::updateHeadPosition(QVector3D point){
     ui->xAt->setText("X: "+QString::number(point.x()));
     ui->yAt->setText("Y: "+QString::number(point.y()));
     ui->zAt->setText("Z: "+QString::number(point.z()));
+
+    //incrementing current layer
     if(point.z()>this->lastZ && this->printerObj->getIsPrinting()){
         this->lastZ=point.z();
         this->currentLayer++;
         ui->glWidget->setCurrentLayer(this->currentLayer);
         ui->headControlWidget->resetLayer();
     }
+
     ui->headControlWidget->addPrintedPoint(point.toPointF());
 }
 
@@ -579,6 +620,14 @@ void MainWindow::saveSettings(){
     }
     settings.endArray();
 
+    settings.beginWriteArray("macros");
+    for(int i=0; i<this->macrosWindow->macros.size(); i++){
+        settings.setArrayIndex(i);
+        settings.setValue("name",this->macrosWindow->macros.at(i)->getName());
+        settings.setValue("value", this->macrosWindow->macros.at(i)->getValue());
+    }
+    settings.endArray();
+
     settings.sync();
 }
 
@@ -659,6 +708,17 @@ void MainWindow::restoreSettings(){
         settings.setArrayIndex(i);
         this->optionDialog->addExtruder(qMakePair(settings.value("number").toInt(),settings.value("color").toString()));
     }
+
+    settings.endArray();
+    size = settings.beginReadArray("macros");
+    if(size==0){
+        ui->macroGroup->hide();
+    }
+    for (int i = 0; i < size; ++i) {
+        settings.setArrayIndex(i);
+        this->macrosWindow->addMacro(settings.value("name").toString(),settings.value("value").toString());
+    }
+
     settings.endArray();
 
 }
@@ -739,14 +799,14 @@ void MainWindow::updatadeSize(QVector3D newSize){
 
 void MainWindow::printFinished(bool value){
     if(value){
-        qDebug() << this->durationTime.toString("hh:mm:ss");
         ui->pauseBtn->setEnabled(false);
         ui->axisControlGroup->setEnabled(true);
+        ui->macroGroup->setEnabled(true);
         ui->printBtn->setEnabled(true);
         ui->progressBar->setHidden(true);
         ui->printBtn->setText(tr("Print"));
         ui->printBtn->setIcon(QIcon(":/imgs/icons/print.png"));
-
+        ui->headControlWidget->hidePoints(false);
         QMessageBox msgBox;
         msgBox.setIcon(QMessageBox::Information);
         msgBox.setText(tr("Print finished in ")+this->durationTime.toString("hh:mm:ss"));
@@ -787,4 +847,108 @@ void MainWindow::on_corseDownZBtn_clicked()
     ui->zSlider->blockSignals(true);
     ui->zSlider->setValue(ui->zSlider->value()-1);
     ui->zSlider->blockSignals(false);
+}
+
+void MainWindow::processMessage(const QString &msg){
+    QStringList args=msg.split("-||-");
+    for(int i=0; i<args.size(); i++){
+        if(args.at(i).endsWith(".stl",Qt::CaseInsensitive) || args.at(i).endsWith(".gcode",Qt::CaseInsensitive)){
+            if(!this->printerObj->getIsPrinting()){
+                loadFile(args.at(i));
+            }
+            else{
+                QMessageBox msgBox;
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText(tr("Cant load new file while printing"));
+                msgBox.exec();
+            }
+        }
+    }
+}
+
+void MainWindow::on_actionMacros_triggered()
+{
+    this->macrosWindow->move(QPoint(this->geometry().center().x()-this->macrosWindow->width()/2,this->geometry().center().y()-this->macrosWindow->height()/2));
+    this->macrosWindow->show();
+}
+
+void MainWindow::addMacroBtn(MacroButton* button){
+    ui->macroGroup->layout()->addWidget(button);
+    if(this->macrosWindow->macros.size()>0){
+        ui->macroGroup->show();
+    }
+}
+
+void MainWindow::removeMacroBtn(MacroButton* button){
+    ui->macroGroup->layout()->removeWidget(button);
+    delete button;
+    if(this->macrosWindow->macros.size()==0){
+        ui->macroGroup->hide();
+    }
+}
+
+void MainWindow::on_t1Combo_editTextChanged(const QString &arg1)
+{
+    if(ui->t1Btn->isChecked() && arg1.size()>0){
+        QMetaObject::invokeMethod(printerObj,"setTemp1",Qt::QueuedConnection,Q_ARG(int, arg1.toInt()));
+        ui->tempGraphWidget->setTargets(arg1.toInt(),-1,-1);
+    }
+}
+
+void MainWindow::on_hbCombo_editTextChanged(const QString &arg1)
+{
+    if(ui->hbBtn->isChecked() && arg1.size()>0){
+        QMetaObject::invokeMethod(printerObj,"setTemp3",Qt::QueuedConnection,Q_ARG(int, arg1.toInt()));
+        ui->tempGraphWidget->setTargets(-1,-1,arg1.toInt());
+    }
+}
+
+void MainWindow::on_actionLoad_STL_triggered()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open file"), this->lastOpendDir, tr("STL files (*.stl)"));
+    // if its stl then open slice window
+    if(fileName.endsWith(".stl",Qt::CaseInsensitive)){
+        this->lastOpendDir=fileName.left(fileName.lastIndexOf("/"));
+        this->sliceDialog->setLastDir(this->lastOpendDir);
+        this->sliceDialog->move(QPoint(this->geometry().center().x()-this->sliceDialog->width()/2,this->geometry().center().y()-this->sliceDialog->height()/2));
+        this->sliceDialog->show();
+        this->sliceDialog->updateStlView();
+        this->sliceDialog->updateConfigs(this->optionDialog->getConfigDir());
+        this->sliceDialog->clearObjects();
+
+
+        this->sliceDialog->addObject(fileName);
+    }
+}
+void MainWindow::on_actionSD_Card_triggered()
+{
+    if(this->printerObj->isConnected()){
+        this->printerObj->getSDFilesList();
+        this->sdCardWindow->setLastDir(this->lastOpendDir);
+        this->sdCardWindow->move(QPoint(this->geometry().center().x()-this->sdCardWindow->width()/2,this->geometry().center().y()-this->sdCardWindow->height()/2));
+        this->sdCardWindow->show();
+    }
+}
+
+void MainWindow::sdFile_selected(QString fileName){
+
+    //clear last object gcode
+    this->gcodeLines.clear();
+    //clear gl widget
+    ui->glWidget->clearObjects();
+    ui->groupBox_4->setTitle(tr("File")+" :"+fileName.right(fileName.length()-fileName.lastIndexOf("/")-1));
+    //enable print button
+    if(printerObj->isConnected()){
+        ui->printBtn->setEnabled(true);
+    }
+    //disable pause btn
+    ui->pauseBtn->setEnabled(false);
+    ui->pauseBtn->blockSignals(true);
+    ui->pauseBtn->setChecked(false);
+    ui->pauseBtn->blockSignals(false);
+    ui->progressBar->hide();
+    ui->pauseBtn->setText(tr("Pause"));
+    ui->printBtn->setText(tr("Print"));
+    ui->printBtn->setIcon(QIcon(":/imgs/icons/print.png"));
+    ui->pauseBtn->setIcon(QIcon(":/imgs/icons/pause.png"));
 }

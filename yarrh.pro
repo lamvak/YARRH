@@ -32,7 +32,10 @@ SOURCES += main.cpp\
     vertex.cpp \
     slice.cpp \
     material.cpp \
-    clipper/clipper.cpp
+    clipper/clipper.cpp \
+    macroswindow.cpp \
+    macrobutton.cpp \
+    sdcardwindow.cpp
 
 HEADERS  += mainwindow.h \
     glwidget.h \
@@ -54,13 +57,18 @@ HEADERS  += mainwindow.h \
     vertex.h \
     slice.h \
     material.h \
-    clipper/clipper.hpp
+    clipper/clipper.hpp \
+    macroswindow.h \
+    macrobutton.h \
+    sdcardwindow.h
 
 FORMS    += mainwindow.ui \
     aboutwindow.ui \
     calibratedialog.ui \
     optiondialog.ui \
-    slicedialog.ui
+    slicedialog.ui \
+    macroswindow.ui \
+    sdcardwindow.ui
 
 RESOURCES += \
     resource.qrc
@@ -73,7 +81,7 @@ TRANSLATIONS = yarrh_pl.ts \
 
 
 include(qextserialport/qextserialport.pri)
-
+include(qtsingleapplication\src\qtsingleapplication.pri)
 win32 {
 #LIBS+=-lglut32
     RC_FILE = icon.rc
@@ -83,14 +91,26 @@ macx {
     ICON = icon.icns
 }
 
-unix:!macx {
-    LIBS+=-lGLU
-}
-
 OBJECTS_DIR = build
 MOC_DIR = build
 UI_DIR = build
 RCC_DIR = build
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

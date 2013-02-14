@@ -60,7 +60,7 @@ void OptionDialog::on_slicerDirBtn_clicked()
 #if defined(Q_WS_MAC)
     fileName = QFileDialog::getOpenFileName(this, tr("Find slicer"), ui->slicerDir->text(), tr("Slic3r.app (slic3r*)"));
 #else
-    fileName = QFileDialog::getOpenFileName(this, tr("Find slicer"), ui->slicerDir->text(), tr("Slic3r-console (slic3r-console*)"));
+    fileName = QFileDialog::getOpenFileName(this, tr("Find slicer"), ui->slicerDir->text(), tr("Slic3r.exe (slic3r.exe)"));
 #endif
 
     ui->slicerDir->setText(fileName);

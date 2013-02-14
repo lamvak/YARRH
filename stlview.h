@@ -88,6 +88,8 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent * event);
     void keyPressEvent (QKeyEvent * event);
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
 private:
     bool showLayers;
     int layerNum;

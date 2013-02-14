@@ -62,14 +62,12 @@ void Face::flip(){
 }
 
 
-void Face::addNeighbor(Face* neighbor){
-    if(neighbor!=NULL && neighbor!=this && !this->neighbors.contains(neighbor)){
-        this->neighbors.append(neighbor);
-    }
-}
-
 QList<Face*> Face::getNeighbors(){
-    return this->neighbors;
+    QList<Face*> out;
+    out.append(edge1->getTwin()->getFaces());
+    out.append(edge2->getTwin()->getFaces());
+    out.append(edge3->getTwin()->getFaces());
+    return out;
 }
 
 

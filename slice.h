@@ -10,9 +10,6 @@
 #elif defined(Q_WS_WIN)
 #include <GL/gl.h>
 #include <GL/glu.h>
-#elif defined(Q_WS_X11)
-#include <GL/gl.h>
-#include <GL/glu.h>
 #endif
 #include "clipper/clipper.hpp"
 #ifndef CALLBACK
@@ -47,7 +44,7 @@ private:
     double layerHeight;
     //line plane intersection
     QVector3D linePLaneIntersection(HalfEdge edge, QVector3D planeOrigin, QVector3D planeNormal);
-    void drawPolygon(int layer);
+    void drawPolygon(Polygons &pgs, int layer);
     //callbacks
     //    void CALLBACK beginCallback(GLenum which);
     //    void CALLBACK errorCallback(GLenum errorCode);

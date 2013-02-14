@@ -26,7 +26,6 @@ public:
     inline Vertex* getMaxZ() {return maxZ;}
     inline Vertex* getMinZ() {return minZ;}
     inline bool isNormalGood() {return goodNormal;}
-    void addNeighbor(Face* );
     QList<Face*> getNeighbors();
     QVector3D getCenter();
     QVector3D* computeNormal(QVector3D* p1, QVector3D* p2, QVector3D* p3);

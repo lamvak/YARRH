@@ -27,6 +27,9 @@ Printer::Printer(QObject *parent)
     inBuffer.clear();
     responseBuffer.clear();
     writeNext=true;
+    this->updatingFileList=false;
+    this->sdPrint=false;
+    this->uploadingToSD=false;
 }
 
 bool Printer::isConnected(){
@@ -41,6 +44,9 @@ bool Printer::getIsPrinting(){
     return this->isPrinting;
 }
 
+bool Printer::isPrintingFromSD(){
+    return this->sdPrint;
+}
 
 bool Printer::connectPort(QString port, int baud){
     emit write_to_console(tr("Connecting..."));
@@ -106,7 +112,7 @@ void Printer::homeZ(){
     send_now("G28 Z0");
 }
 void Printer::homeAll(){
-    send_now("G28 X0 Y0 Z0");
+    send_now("G28");
 }
 
 //moving head
@@ -138,10 +144,14 @@ void Printer::disableSteppers(){
 
 //adding data to printer buffer
 void Printer::loadToBuffer(QStringList buffer, bool clear){
+    this->curr_pos.setX(0);
+    this->curr_pos.setY(0);
+    this->curr_pos.setZ(0);
     if(clear){
         this->mainQuery.clear();
     }
     this->mainQuery.append(buffer);
+    this->sdPrint=false;
 }
 
 void Printer::setMonitorTemperature(bool monitor){
@@ -156,28 +166,21 @@ void Printer::setMonitorTemperature(bool monitor){
 
 void Printer::getTemperature(){
     if(this->isConnected()){
-        send_now("M105");
+        if(!this->uploadingToSD){
+            send_now("M105");
+        }
+        if(this->sdPrint){
+            send_now("M27");
+        }
     }
 }
 
 void Printer::setTemp1(int temp){
-    if(!this->isPrinting){
-        this->writeToPort("M110", -1, true);
-        send("M104 S"+QString::number(temp));
-    }
-    else{
-        send_now("M104 S"+QString::number(temp));
-    }
+    send_now("M104 S"+QString::number(temp));
 }
 
 void Printer::setTemp3(int temp){
-    if(!this->isPrinting){
-        this->writeToPort("M110", -1, true);
-        send("M140 S"+QString::number(temp));
-    }
-    else{
-        send_now("M140 S"+QString::number(temp));
-    }
+     send_now("M140 S"+QString::number(temp));
 }
 
 void Printer::extrude(int lenght, int speed){
@@ -254,12 +257,14 @@ void Printer::send_next(){
     //if there are lines to send in main buffer
     if(this->isPrinting && this->mainQuery.size()>0){
         writeToPort(this->mainQuery.takeFirst(),this->lineNum,true);
-        emit progress(this->mainQuery.size());
+        emit progress(this->mainQuery.size(),-1);
         this->lineNum++;
     }
     else{
         if(this->isPrinting){
-            emit printFinished(true);
+            if(!this->sdPrint){
+                emit printFinished(true);
+            }
         }
         this->isPrinting=false;
     }
@@ -269,14 +274,7 @@ void Printer::send_next(){
 int Printer::writeToPort(QString command,int lineNum, bool calcCheckSum){
     //analizing command for position tracking
     QStringList args=command.split(" ");
-    for(int i=0 ;i <args.size(); i++){
-        if(args.at(i).contains("X"))
-            curr_pos.setX(args.at(i).mid(1).toDouble());
-        if(args.at(i).contains("Y"))
-            curr_pos.setY(args.at(i).mid(1).toDouble());
-        if(args.at(i).contains("Z"))
-            curr_pos.setZ(args.at(i).mid(1).toDouble());
-    }
+
     if(command.contains("M104") || command.contains("M109")){
         emit settingTemp1(command.mid(command.lastIndexOf("S")+1,command.length()-command.lastIndexOf("S")+1).toDouble());
     }
@@ -284,8 +282,18 @@ int Printer::writeToPort(QString command,int lineNum, bool calcCheckSum){
         emit settingTemp3(command.mid(command.lastIndexOf("S")+1,command.length()-command.lastIndexOf("S")+1).toDouble());
     }
 
-    if(command.contains("G1") || command.contains("G0"))
-        emit currentPosition(curr_pos);
+    if(command.contains("G1") || command.contains("G0")){
+        for(int i=0 ;i <args.size(); i++){
+            if(args.at(i).contains("X"))
+                curr_pos.setX(args.at(i).mid(1).toDouble());
+            if(args.at(i).contains("Y"))
+                curr_pos.setY(args.at(i).mid(1).toDouble());
+            if(args.at(i).contains("Z")){
+                curr_pos.setZ(args.at(i).mid(1).toDouble());
+            }
+        }
+        emit currentPosition(curr_pos);    
+    }
 
     if(this->isConnected()){
         if(calcCheckSum){
@@ -350,6 +358,29 @@ void Printer::processResponce(QString responce){
             }
             emit currentTemp(last_head_temp,0.0,last_bed_temp);
         }
+        //if its something about sd card
+        if(lastResponse.contains("Begin file list")){
+            this->sdFiles.clear();
+            this->updatingFileList=true;
+        }
+        if(this->updatingFileList){
+            this->sdFiles.append(lastResponse.toLower());
+        }
+        if(lastResponse.contains("End file list")){
+            this->updatingFileList=false;
+            this->sdFiles.removeFirst();
+            this->sdFiles.removeLast();
+            emit SDFileList(this->sdFiles);
+        }
+        if(lastResponse.contains("SD printing byte")){
+            QString prog=lastResponse.right(lastResponse.length()-lastResponse.lastIndexOf(" ")-1);
+            QStringList values = prog.split("/");
+            emit progress(values.at(0).toInt(), values.at(1).toInt());
+            if(values.at(0).toInt()==values.at(1).toInt()){
+                emit printFinished(true);
+                this->sdPrint=false;
+            }
+        }
         //if its response for position command
         //if we are printing then continue
         if(lastResponse.startsWith("ok")){
@@ -369,9 +400,12 @@ void Printer::processResponce(QString responce){
            toResend=lastResponse.toLower().remove(QRegExp("[\\D]")).toInt(&ok);
            if(ok){
                this->resendFrom=toResend;
+               if(!this->isPaused){
+                   emit clearToSend();
+               }
            }
            else{
-               write_to_console(tr("something is horribly wrong"));
+               emit write_to_console(tr("something is horribly wrong"));
            }
         }
     }
@@ -383,4 +417,46 @@ void Printer::pausePrint(bool pause){
     if(!pause){
         send_next();
     }
+}
+
+//SD stuff
+
+void Printer::getSDFilesList(){
+    this->sdFiles.clear();
+    if(!this->isPrinting){
+        send_now("M21");
+        send_now("M20");
+    }
+}
+
+void Printer::uploadToSD(QString filename, QStringList data){
+    this->mainQuery.clear();
+    this->mainQuery.append(data);
+    send_now("M28 "+filename);
+    this->uploadedFileName=filename;
+    this->uploadingToSD=true;
+    while(mainQuery.size()>0){
+        send_now(mainQuery.takeFirst());
+        emit uploadProgress(mainQuery.size(), -1);
+    }
+    send_now("M29 "+filename);
+    this->uploadingToSD=false;
+    getSDFilesList();
+}
+
+void Printer::selectSDFile(QString filename){
+    send_now("M23 "+filename);
+    this->sdPrint=true;
+}
+
+void Printer::startResumeSdPrint(){
+    send_now("M24");
+}
+
+void Printer::pauseSDPrint(){
+    send_now("M25");
+}
+
+void Printer::set_isSdPrinting(bool value){
+    this->sdPrint=value;
 }

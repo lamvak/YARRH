@@ -6,9 +6,6 @@
 #elif defined(Q_WS_WIN)
 #include <GL/gl.h>
 #include <GL/glu.h>
-#elif defined(Q_WS_X11)
-#include <GL/gl.h>
-#include <GL/glu.h>
 #endif
 #include <math.h>
 #include "stlview.h"
@@ -223,6 +220,29 @@ void StlView::mouseReleaseEvent(QMouseEvent *){
         updateGL();
     }
     this->oryginalCenters=getSelectedObjectsCords();
+}
+
+//drag event
+void StlView::dragEnterEvent(QDragEnterEvent *event){
+    event->acceptProposedAction();
+}
+
+void StlView::dropEvent(QDropEvent *event){
+    const QMimeData* mimeData = event->mimeData();
+    QPointF position=screenToWorld(event->pos().x(),event->pos().y());
+    // check for our needed mime type, here a file or a list of files
+    if (mimeData->hasUrls())
+    {
+        QStringList pathList;
+        QList<QUrl> urlList = mimeData->urls();
+
+        // extract the local paths of the files
+        for (int i = 0; i < urlList.size() && i < 32; ++i)
+        {
+            pathList.append(urlList.at(i).toLocalFile());
+            this->getObject(addObject(urlList.at(i).toLocalFile()))->moveXY(position.x(),position.y());
+        }
+    }
 }
 
 //mouse move event
@@ -985,11 +1005,13 @@ bool StlView::allMirrored(){
 
 void  StlView::clearObjects(){
     QHash<QString, StlObject*>::iterator j;
+
     for(j = this->objects.begin(); j != this->objects.end(); ++j){
         j.value()->freeList();
-        delete j.value();
+        //delete j.value();
     }
     this->objects.clear();
+
 }
 
 void StlView::setActiveTool(int tool){

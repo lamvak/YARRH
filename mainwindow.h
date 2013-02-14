@@ -11,16 +11,19 @@
 #include "headcontrol.h"
 #include "printer.h"
 #include "aboutwindow.h"
+#include "macroswindow.h"
+#include "macrobutton.h"
 #include "calibratedialog.h"
 #include "optiondialog.h"
 #include "slicedialog.h"
+#include "sdcardwindow.h"
 #include "qextserialport.h"
 #include "qextserialenumerator.h"
 
 //version number
 #define VERSION_MAJOR       0
-#define VERSION_MINOR       1
-#define VERSION_REVISION    8
+#define VERSION_MINOR       2
+#define VERSION_REVISION    0
 
 namespace Ui {
     class MainWindow;
@@ -56,10 +59,16 @@ private:
     SliceDialog *sliceDialog;
     //confirmation dialog
     QMessageBox* msgBox;
+    //macros window
+    MacrosWindow *macrosWindow;
+    //Sd card window
+    SDCardWindow* sdCardWindow;
     qreal lastZ;
     int currentLayer;
     void saveSettings();
     void restoreSettings();
+public slots:
+    void processMessage(const QString &msg);
 private slots:
     void on_connectBtn_toggled(bool);
     void loadFile(QString fileName="");
@@ -70,7 +79,7 @@ private slots:
     //pausing print
     void on_pauseBtn_toggled(bool);
     void drawTemp(double, double,double);
-    void updateProgress(int);
+    void updateProgress(int, int);
     //setting temperatures
     void on_t1Btn_toggled(bool);
     void setTemp2(bool);
@@ -87,6 +96,8 @@ private slots:
     void on_extrudeBtn_clicked();
     void on_retracktBtn_clicked();
     void printerConnected(bool);
+    void addMacroBtn(MacroButton*);
+    void removeMacroBtn(MacroButton*);
     //setting temp in ui from gcode
     void setTemp1FromGcode(double value);
     void setTemp3FromGcode(double value);
@@ -100,6 +111,12 @@ private slots:
     void on_homeZ_clicked();
     void on_corseUpZBtn_clicked();
     void on_corseDownZBtn_clicked();
+    void on_actionMacros_triggered();
+    void on_t1Combo_editTextChanged(const QString &arg1);
+    void on_hbCombo_editTextChanged(const QString &arg1);
+    void on_actionLoad_STL_triggered();
+    void on_actionSD_Card_triggered();
+    void sdFile_selected(QString fileName);
 };
 
 #endif // MAINWINDOW_H
