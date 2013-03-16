@@ -81,7 +81,7 @@ TRANSLATIONS = yarrh_pl.ts \
 
 
 include(qextserialport/qextserialport.pri)
-include(qtsingleapplication\src\qtsingleapplication.pri)
+include(qtsingleapplication/src/qtsingleapplication.pri)
 win32 {
 #LIBS+=-lglut32
     RC_FILE = icon.rc
