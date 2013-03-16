@@ -91,7 +91,7 @@ private:
     //calculating angle beetwen two QVector3D
     double angle(QVector3D p1, QVector3D p2);
     //slicer object, it stores info about each of layers
-    Slice* slicer;
+    //Slice* slicer;
 public:
 
     explicit StlObject(QString fileName, QObject *parent = 0);

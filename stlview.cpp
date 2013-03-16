@@ -1004,13 +1004,13 @@ bool StlView::allMirrored(){
 }
 
 void  StlView::clearObjects(){
-    QHash<QString, StlObject*>::iterator j;
+//    QHash<QString, StlObject*>::iterator j;
 
-    for(j = this->objects.begin(); j != this->objects.end(); ++j){
-        j.value()->freeList();
-        //delete j.value();
-    }
-    this->objects.clear();
+//    for(j = this->objects.begin(); j != this->objects.end(); ++j){
+//        j.value()->freeList();
+//        //delete j.value();
+//    }
+//    this->objects.clear();
 
 }
 

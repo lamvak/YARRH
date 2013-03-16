@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
     QTextCodec::setCodecForTr(QTextCodec::codecForName ("UTF-8"));
 
-    QtSingleApplication a("YARRH",argc, argv);
+    QApplication a(argc, argv);
     QString locale = QLocale::system().name();
     QString message;
     //get arguments
@@ -22,13 +22,13 @@ int main(int argc, char *argv[])
         message += "-||-";
     }
 
-    if (a.sendMessage(message))
-        return 0;
-    a.initialize(FALSE);
+//    if (a.sendMessage(message))
+//        return 0;
+//    a.initialize(FALSE);
 
-    if(a.isRunning()){
-        return 0;
-    }
+//    if(a.isRunning()){
+//        return 0;
+//    }
 
     QCoreApplication::setOrganizationName("wuflnor");
     // XXX This domain is only for Mac settings.

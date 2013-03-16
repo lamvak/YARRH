@@ -15,7 +15,7 @@
 #include <QRect>
 #include "stlobject.h"
 #include "material.h"
-#include "slice.h"
+//#include "slice.h"
 
 class StlView : public QGLWidget
 {

@@ -4,7 +4,7 @@
 StlObject::StlObject(QObject *parent) :
 QObject(parent)
 {
-    this->slicer=new Slice();
+    //this->slicer=new Slice();
     this->scaleValue=1.0;
     this->rotation=0.0;
     this->selected=false;
@@ -18,7 +18,7 @@ QObject(parent)
 StlObject::StlObject(QString fileName, QObject *parent) :
     QObject(parent)
 {
-    this->slicer=new Slice();
+    //this->slicer=new Slice();
     this->scaleValue=1.0;
     this->rotation=0.0;
     this->selected=false;
@@ -53,7 +53,7 @@ void StlObject::copy(StlObject *copyFrom){
     this->mirrorZ=copyFrom->mirrorZ;
     this->list_index=copyFrom->list_index;
     this->objectMaterial = copyFrom->objectMaterial;
-    this->slicer = copyFrom->slicer;
+    //this->slicer = copyFrom->slicer;
 }
 
 void StlObject::loadFile(QString fileName){
@@ -454,7 +454,7 @@ void StlObject::draw(bool picking, bool showLayers, int layerNum){
         glCallList(this->list_index);
     }
     else{
-        this->slicer->draw(layerNum);
+        //this->slicer->draw(layerNum);
     }
     if(!picking){
         //draw bad edges
