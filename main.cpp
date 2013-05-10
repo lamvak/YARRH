@@ -1,7 +1,6 @@
 #include <QtGui/QApplication>
 #include <QDebug>
 #include <QTextCodec>
-#include "./qtsingleapplication.h"
 
 
 
