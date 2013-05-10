@@ -12,6 +12,8 @@
 #elif defined(Q_WS_WIN)
 #include <GL/gl.h>
 #include <GL/glu.h>
+#elif defined(Q_WS_X11)
+#include <GLES/gl2.h>
 #endif
 
 //class that hold info about layer in opengl lists for faster rendering

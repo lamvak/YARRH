@@ -10,8 +10,9 @@
 #elif defined(Q_WS_WIN)
 #include <GL/gl.h>
 #include <GL/glu.h>
+#elif defined(Q_WS_X11)
+#include <GLES/gl2.h>
 #endif
-
 #include <QVector3D>
 #include <QHash>
 #include <QCryptographicHash>
