@@ -10,7 +10,8 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #elif defined(Q_WS_X11)
-#include <GLES/gl2.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 #endif
 
 #include <QtOpenGL>
