@@ -7,7 +7,7 @@
 #if defined(Q_WS_MAC)
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
-#elif defined(Q_WS_WIN)||defined(Q_WS_X11)
+#elif defined(Q_WS_WIN)
 #include <GL/gl.h>
 #include <GL/glu.h>
 #endif
@@ -65,7 +65,11 @@ private:
     bool mirrorX;
     bool mirrorY;
     bool mirrorZ;
+    bool show_angles;
+    bool show_support;
     int list_index;
+    int angle_list_index;
+    int support_list_index;
     bool preSelected;
     Material* objectMaterial;
     //object description
@@ -79,11 +83,11 @@ private:
     //here is list of edges connecting only one face E(p1,p2)==E(p2,p1)
     QList<HalfEdge*> badEdges;
     //function for adding verteces
-    Vertex* addVertex(float x, float y, float z);
+    Vertex* addVertex(float x, float y, float z, QHash<QString,Vertex*> &list);
     //function for adding haledges
-    HalfEdge* addHalfEdge(Vertex *v1, Vertex *v2);
+    HalfEdge* addHalfEdge(Vertex *v1, Vertex *v2,QHash<QString,HalfEdge*> &list);
     //function for adding faces
-    Face* addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3);
+    Face* addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3, QHash<QString,Face*> &list);
     //just a helper function
     QList<HalfEdge*> intersectLists(QList<HalfEdge*> list1, QList<HalfEdge*> list2);
     //make gl list
@@ -92,6 +96,13 @@ private:
     double angle(QVector3D p1, QVector3D p2);
     //slicer object, it stores info about each of layers
     //Slice* slicer;
+    //things realeated to genereting support
+    //list of verteces
+    QHash<QString,Vertex*> support_vertexes;
+    //list of edges
+    QHash<QString,HalfEdge*> support_edges;
+    //list of faces
+    QHash<QString,Face*> support_faces;
 public:
 
     explicit StlObject(QString fileName, QObject *parent = 0);
@@ -105,6 +116,8 @@ public:
     void setRotation(double angle);
     void scale(double value);
     void loadFile(QString fileName);
+    void set_showAngles(bool show);
+    void set_showSupport(bool show);
     QVector3D getOffset();
     QList<QVector3D> getTriangles();
     double getRotation();
@@ -121,7 +134,11 @@ public:
     inline double getHeight(){ return height*scaleValue; }
     inline bool isMirrored() { return mirrorX^mirrorY; }
     inline bool isSelected() { return selected; }
+    inline bool get_showAngles() {return show_angles;}
+    inline bool get_showSupport() {return show_support;}
     void freeList();
+
+    void generateSupport(qreal treshold);
 signals:
     void progress(int value, int max, QString text);
     void doneProcessing(bool);

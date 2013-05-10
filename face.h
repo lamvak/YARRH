@@ -31,6 +31,7 @@ public:
     QVector3D* computeNormal(QVector3D* p1, QVector3D* p2, QVector3D* p3);
     void setNormalIsGood(bool value);
     QString getHash();
+    inline qreal getAngle(){return angle;}
 private:
     HalfEdge* edge1;
     HalfEdge* edge2;
@@ -38,6 +39,7 @@ private:
     Vertex* maxZ;
     Vertex* minZ;
     QVector3D* normal;
+    qreal angle;
     QList<Face*> neighbors;
     bool goodNormal;
 };

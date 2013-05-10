@@ -13,6 +13,8 @@ QObject(parent)
     this->mirrorX=false;
     this->mirrorY=false;
     this->mirrorZ=false;
+    this->show_angles=false;
+    this->show_support=false;
 }
 
 StlObject::StlObject(QString fileName, QObject *parent) :
@@ -27,6 +29,8 @@ StlObject::StlObject(QString fileName, QObject *parent) :
     this->mirrorX=false;
     this->mirrorY=false;
     this->mirrorZ=false;
+    this->show_angles=false;
+    this->show_support=false;
     this->loadFile(fileName);
 }
 
@@ -53,6 +57,8 @@ void StlObject::copy(StlObject *copyFrom){
     this->mirrorZ=copyFrom->mirrorZ;
     this->list_index=copyFrom->list_index;
     this->objectMaterial = copyFrom->objectMaterial;
+    this->show_angles=copyFrom->show_angles;
+    this->show_support=copyFrom->show_support;
     //this->slicer = copyFrom->slicer;
 }
 
@@ -146,16 +152,16 @@ void StlObject::loadFile(QString fileName){
                 yMin=qMin(qMin(yMin,y1),qMin(y3,y2));
                 zMin=qMin(qMin(zMin,z1),qMin(z3,z2));
 
-                v1=addVertex(x1,y1,z1);
-                v2=addVertex(x2,y2,z2);
-                v3=addVertex(x3,y3,z3);
+                v1=addVertex(x1,y1,z1,this->vertexes);
+                v2=addVertex(x2,y2,z2,this->vertexes);
+                v3=addVertex(x3,y3,z3,this->vertexes);
 
-                e1=addHalfEdge(v1,v2);
-                e2=addHalfEdge(v2,v3);
-                e3=addHalfEdge(v3,v1);
+                e1=addHalfEdge(v1,v2,this->edges);
+                e2=addHalfEdge(v2,v3,this->edges);
+                e3=addHalfEdge(v3,v1,this->edges);
 
                 //inserting face to list
-                face=addFace(e1,e2,e3);
+                face=addFace(e1,e2,e3,this->faces);
 
                 triang_count++;
                 emit progress(file->pos(),file->size(), tr("Loading and analizing STL"));
@@ -221,15 +227,16 @@ void StlObject::loadFile(QString fileName){
                 yMin=qMin(qMin(yMin,y1),qMin(y3,y2));
                 zMin=qMin(qMin(zMin,z1),qMin(z3,z2));
 
-                v1=addVertex(x1,y1,z1);
-                v2=addVertex(x2,y2,z2);
-                v3=addVertex(x3,y3,z3);
+                v1=addVertex(x1,y1,z1,this->vertexes);
+                v2=addVertex(x2,y2,z2,this->vertexes);
+                v3=addVertex(x3,y3,z3,this->vertexes);
 
-                e1=addHalfEdge(v1,v2);
-                e2=addHalfEdge(v2,v3);
-                e3=addHalfEdge(v3,v1);
+                e1=addHalfEdge(v1,v2,this->edges);
+                e2=addHalfEdge(v2,v3,this->edges);
+                e3=addHalfEdge(v3,v1,this->edges);
+
                 //inserting face to list
-                face=addFace(e1,e2,e3);
+                face=addFace(e1,e2,e3,this->faces);
 
                 triang_count++;
                 emit progress(file->pos(),file->size(), "Loading and analizing STL");
@@ -288,7 +295,12 @@ void StlObject::loadFile(QString fileName){
 
 void StlObject::render(){
     GLuint index = glGenLists(1);
+    GLuint angle_index = glGenLists(1);
+    GLuint support_index = glGenLists(1);
+    GLfloat fCurrentColor[4];
     this->list_index=index;
+    this->angle_list_index=angle_index;
+    this->support_list_index=support_index;
     glFinish();
     //iterator
     QHash<QString, Face*>::iterator i;
@@ -302,42 +314,70 @@ void StlObject::render(){
         glEnd( );
     }
     glEndList();
+
+
+    glNewList(this->angle_list_index, GL_COMPILE);
+    for(i = this->faces.begin(); i != this->faces.end(); ++i){
+        glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
+        glColor4f(0.5f-(i.value()->getAngle()+1)/2, (i.value()->getAngle()+1)/2, 0.0f, 0.0f);
+
+        glBegin(GL_TRIANGLES);
+        glNormal3f(i.value()->getNormal()->x(),i.value()->getNormal()->y(),i.value()->getNormal()->z());
+        glVertex3f(i.value()->getEdge1()->getStart()->x(), i.value()->getEdge1()->getStart()->y(), i.value()->getEdge1()->getStart()->z());
+        glVertex3f(i.value()->getEdge2()->getStart()->x(), i.value()->getEdge2()->getStart()->y(), i.value()->getEdge2()->getStart()->z());
+        glVertex3f(i.value()->getEdge3()->getStart()->x(), i.value()->getEdge3()->getStart()->y(), i.value()->getEdge3()->getStart()->z());
+        glEnd( );
+
+        glColor4fv(fCurrentColor);
+    }
+    glEndList();
+
+    glNewList(this->support_list_index, GL_COMPILE);
+    for(i = this->support_faces.begin(); i != this->support_faces.end(); ++i){
+        glBegin(GL_TRIANGLES);
+        glNormal3f(i.value()->getNormal()->x(),i.value()->getNormal()->y(),i.value()->getNormal()->z());
+        glVertex3f(i.value()->getEdge1()->getStart()->x(), i.value()->getEdge1()->getStart()->y(), i.value()->getEdge1()->getStart()->z());
+        glVertex3f(i.value()->getEdge2()->getStart()->x(), i.value()->getEdge2()->getStart()->y(), i.value()->getEdge2()->getStart()->z());
+        glVertex3f(i.value()->getEdge3()->getStart()->x(), i.value()->getEdge3()->getStart()->y(), i.value()->getEdge3()->getStart()->z());
+        glEnd( );
+    }
+    glEndList();
 }
 
 //adding verteces without adding doubles
-Vertex* StlObject::addVertex(float x, float y, float z){
+Vertex* StlObject::addVertex(float x, float y, float z, QHash<QString, Vertex *> &list){
     Vertex* out;
     //merging close vetreces so stiching algorythm have less work
-    float threshold=0.0001;
+    float threshold=0.000001;
     float roundedX=(int)(x/threshold)*threshold;
     float roundedY=(int)(y/threshold)*threshold;
     float roundedZ=(int)(z/threshold)*threshold;
     QString hash=QString::number(roundedX)+QString::number(roundedY)+QString::number(roundedZ);
     //adding verteces without adding doubles
-    if(this->vertexes.contains(hash)){
-       out=this->vertexes.value(hash);
+    if(list.contains(hash)){
+       out=list.value(hash);
     }
     else{
         out=new Vertex();
         out->setX(x);
         out->setY(y);
         out->setZ(z);
-        this->vertexes.insert(hash,out);
+        list.insert(hash,out);
     }
     return out;
 }
 //adding edges
-HalfEdge* StlObject::addHalfEdge(Vertex *v1, Vertex *v2){
+HalfEdge* StlObject::addHalfEdge(Vertex *v1, Vertex *v2, QHash<QString, HalfEdge *> &list){
     HalfEdge* out;
     QString hash=QString::number((size_t)v1)+QString::number((size_t)v2);
 
-    if(!this->edges.contains(hash)){
+    if(!list.contains(hash)){
         out=new HalfEdge(v1,v2);
-        this->edges.insert(hash,out);
-        out->setTwin(addHalfEdge(v2,v1));
+        list.insert(hash,out);
+        out->setTwin(addHalfEdge(v2,v1,list));
     }
     else{
-        out=this->edges.value(hash);
+        out=list.value(hash);
     }
     //add edges to verteces
     v1->addHalEdge(out);
@@ -346,7 +386,7 @@ HalfEdge* StlObject::addHalfEdge(Vertex *v1, Vertex *v2){
 }
 
 //adding face
-Face* StlObject::addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3){
+Face* StlObject::addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3, QHash<QString, Face *> &list){
     QString hash;
     QList<size_t> edges;
     edges.append((size_t)edge1);
@@ -357,12 +397,12 @@ Face* StlObject::addFace(HalfEdge *edge1, HalfEdge *edge2, HalfEdge *edge3){
     hash.append(QString::number(edges.at(0))+QString::number(edges.at(1))+QString::number(edges.at(2)));
     Face* out;
 
-    if(this->faces.contains(hash)){
-        out = this->faces.value(hash);
+    if(list.contains(hash)){
+        out = list.value(hash);
     }
     else{
         out = new Face(edge1,edge2,edge3);
-        this->faces.insert(hash,out);
+        list.insert(hash,out);
     }
     edge1->addFace(out);
     edge2->addFace(out);
@@ -425,10 +465,19 @@ void StlObject::draw(bool picking, bool showLayers, int layerNum){
     GLfloat     diffuse_S[] = {this->objectMaterial->getColor().lighter(175).redF(),   this->objectMaterial->getColor().lighter(125).greenF(),this->objectMaterial->getColor().lighter(125).blueF(),1.0};
     GLfloat     specular_S[] = {0.50,  0.50,    0.50, 1.0};
     GLfloat     shininess_S[] = {200};
+
+    GLfloat     ambient_Sup[] = { 0.0,   0.0,     0.1,  0.4};
+    GLfloat     diffuse_Sup[] = {0.0,   0.0, 1.0 ,0.4};
+    GLfloat     specular_Sup[] = {0.0,  0.0,    0.50, 0.4};
+    GLfloat     shininess_Sup[] = {200};
     GLfloat   fCurrentColor[4];
     // Get the current color
     glGetFloatv(GL_CURRENT_COLOR, fCurrentColor);
-        glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_COLOR_MATERIAL);
+    if(!show_angles){
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
     if(!picking){
         if(selected){
             glMaterialfv(GL_FRONT, GL_AMBIENT,ambient_S);
@@ -450,12 +499,25 @@ void StlObject::draw(bool picking, bool showLayers, int layerNum){
 
     glRotatef(((int)this->rotation/5)*5, 0.0, 0.0, 1.0);
     //call list
-    if(picking || !showLayers){
+    if(picking || !show_angles){
         glCallList(this->list_index);
     }
     else{
-        //this->slicer->draw(layerNum);
+        if(show_angles)
+            glEnable(GL_COLOR_MATERIAL);
+        glCallList(this->angle_list_index);
     }
+
+    if(show_support){
+       if(!picking){
+           glMaterialfv(GL_FRONT, GL_AMBIENT,ambient_Sup);
+           glMaterialfv(GL_FRONT, GL_DIFFUSE,diffuse_Sup);
+           glMaterialfv(GL_FRONT, GL_SPECULAR,specular_Sup);
+           glMaterialfv(GL_FRONT, GL_SHININESS,shininess_Sup);
+       }
+       glCallList(this->support_list_index);
+    }
+
     if(!picking){
         //draw bad edges
         glDisable(GL_LIGHTING);
@@ -471,9 +533,9 @@ void StlObject::draw(bool picking, bool showLayers, int layerNum){
         glDepthMask(true);
         glEnable(GL_LIGHTING);
     }
+    glEnable(GL_COLOR_MATERIAL);
     glPopMatrix();
     // Restore the current color
-    glEnable(GL_COLOR_MATERIAL);
     glColor4fv(fCurrentColor);
 }
 
@@ -492,6 +554,14 @@ void StlObject::mirror(QChar axis){
         this->mirrorZ=!this->mirrorZ;
         break;
     }
+}
+
+void StlObject::set_showAngles(bool show){
+    this->show_angles=show;
+}
+
+void StlObject::set_showSupport(bool show){
+    this->show_support=show;
 }
 
 QList<QVector3D> StlObject::getTriangles(){
@@ -658,8 +728,8 @@ void StlObject::repairHoles(){
         if(currentFace.angle<75){
             qDebug() << this->edges.size();
             qDebug() << "dodaje face";
-            newEdge = addHalfEdge(currentFace.edge2->getStop(),currentFace.edge1->getStart());
-            newFace=addFace(currentFace.edge1,currentFace.edge2,newEdge);
+            newEdge = addHalfEdge(currentFace.edge2->getStop(),currentFace.edge1->getStart(),this->edges);
+            newFace=addFace(currentFace.edge1,currentFace.edge2,newEdge,this->faces);
             qDebug() << newFace->getEdge1()->getStart() << newFace->getEdge2()->getStart() << newFace->getEdge3()->getStart();
             qDebug() << this->edges.size();
         }
@@ -689,4 +759,54 @@ QString StlObject::getFileName(){
 
 void StlObject::freeList(){
     glDeleteLists(this->list_index, 1);
+    glDeleteLists(this->angle_list_index, 1);
+    glDeleteLists(this->support_list_index, 1);
+}
+
+
+void StlObject::generateSupport(qreal treshold){
+    qDebug() << "genereting support" << treshold;
+    this->support_edges.clear();
+    this->support_faces.clear();
+    this->support_vertexes.clear();
+    qreal z_space=0.3;
+    //temp stuff
+    Vertex *v1;
+    Vertex *v2;
+    Vertex *v3;
+    HalfEdge *e1;
+    HalfEdge *e2;
+    HalfEdge *e3;
+    Face *face;
+
+    QHash<QString, Face*>::iterator i;
+    for(i = this->faces.begin(); i != this->faces.end(); ++i){
+        if(i.value()->getAngle()<0 && i.value()->getAngle()*-1>treshold){
+            v1=addVertex(i.value()->getEdge1()->getStart()->x(),i.value()->getEdge1()->getStart()->y(),i.value()->getEdge1()->getStart()->z()-z_space,this->support_vertexes);
+            v2=addVertex(i.value()->getEdge2()->getStart()->x(),i.value()->getEdge2()->getStart()->y(),i.value()->getEdge2()->getStart()->z()-z_space,this->support_vertexes);
+            v3=addVertex(i.value()->getEdge3()->getStart()->x(),i.value()->getEdge3()->getStart()->y(),i.value()->getEdge3()->getStart()->z()-z_space,this->support_vertexes);
+            e1=addHalfEdge(v1,v2,this->support_edges);
+            e2=addHalfEdge(v2,v3,this->support_edges);
+            e3=addHalfEdge(v3,v1,this->support_edges);
+
+//            //inserting face to list
+           face=addFace(e1,e2,e3,this->support_faces);
+        }
+    }
+
+    //arrange them into isles
+
+    //calculate area of them
+
+    // generate outline
+
+    //check if isle have holes
+
+    //patch them
+
+    //extrude isles down [somwhere here should be checking if we hit model o bottom
+
+    //rerender whole model
+    freeList();
+    render();
 }

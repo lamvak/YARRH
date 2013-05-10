@@ -14,6 +14,8 @@ SliceDialog::SliceDialog(const QGLWidget * shareWidget, QWidget *parent) :
     connect(this->stlView, SIGNAL(progress(int,int,QString)), this, SLOT(updateProgress(int,int,QString)));
     connect(this->stlView, SIGNAL(doneProcessing(bool)),this,SLOT(processingFinished(bool)));
     connect(this->stlView, SIGNAL(selectedCors(QPointF)), this, SLOT(setOffset(QPointF)));
+    connect(this->stlView, SIGNAL(selectedShowAngles(bool)), this, SLOT(update_show_Angles(bool)));
+    connect(this->stlView, SIGNAL(selectedShowSupport(bool)), this, SLOT(update_show_Support(bool)));
 
     connect(ui->camFrontBtn, SIGNAL(clicked()), this->stlView, SLOT(viewFront()));
     connect(ui->camSideBtn, SIGNAL(clicked()), this->stlView, SLOT(viewSide()));
@@ -23,6 +25,8 @@ SliceDialog::SliceDialog(const QGLWidget * shareWidget, QWidget *parent) :
     connect(ui->scaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(scaleObject(int)));
     connect(ui->xSpinBox, SIGNAL(valueChanged(double)), this, SLOT(moveObjectX(double)));
     connect(ui->ySpinBox, SIGNAL(valueChanged(double)), this, SLOT(moveObjectY(double)));
+    connect(ui->showAngles, SIGNAL(toggled(bool)), this->stlView, SLOT(setShowAngles(bool)));
+    connect(ui->showSupport, SIGNAL(toggled(bool)), this->stlView, SLOT(setShowSupport(bool)));
     connect(this->stlView, SIGNAL(nonManifold(QString)), this, SLOT(nonManifold(QString)));
     ui->consoleGroup->hide();
     ui->progressBar->hide();
@@ -357,4 +361,23 @@ void SliceDialog::on_showLayers_toggled(bool checked)
 {
     ui->layerSlider->setEnabled(checked);
     this->stlView->setShowLayers(checked);
+}
+
+void SliceDialog::on_showAngles_toggled(bool checked)
+{
+
+}
+
+void SliceDialog::update_show_Angles(bool show){
+
+    ui->showAngles->setChecked(show);
+}
+
+void SliceDialog::update_show_Support(bool show){
+    ui->showSupport->setChecked(show);
+}
+
+void SliceDialog::on_generateSupport_clicked()
+{
+    stlView->generateSupport(cos((float)ui->supportTreshold->value()*3.14159/180.0));
 }

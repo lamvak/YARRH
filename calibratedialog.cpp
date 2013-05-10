@@ -19,7 +19,6 @@ QVector4D CalibrateDialog::getCallibrationsSetting(){
     return out;
 }
 
-
 bool CalibrateDialog::autoCalibrateX(){
     return ui->XGroup->isChecked();
 }

@@ -28,6 +28,11 @@ Face::Face(HalfEdge *e1, HalfEdge *e2, HalfEdge *e3){
     if(this->maxZ->z()<this->edge3->getStart()->z()){
         this->maxZ=this->edge3->getStart();
     }
+    //computing angle beetwen x-y plane and face
+    QVector3D vecA=*this->normal;
+    QVector3D vecB(0,0,1);
+
+    this->angle=vecB.dotProduct(vecA,vecB);
 }
 
 Face::Face(): edge1(NULL), edge2(NULL), edge3(NULL), normal(NULL){

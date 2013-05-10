@@ -43,6 +43,8 @@ private slots:
     void objectRotated(int);
     void moveObjectX(double);
     void moveObjectY(double);
+    void update_show_Angles(bool);
+    void update_show_Support(bool);
 
     void nonManifold(QString name);
     void on_exportStlBtn_clicked();
@@ -79,6 +81,10 @@ private slots:
     void on_layerSlider_valueChanged(int value);
 
     void on_showLayers_toggled(bool checked);
+
+    void on_showAngles_toggled(bool checked);
+
+    void on_generateSupport_clicked();
 
 private:
     QList<Material*>* materials;
