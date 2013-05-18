@@ -136,6 +136,13 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
            </widget>
           </item>
           <item>
+           <widget class="QCheckBox" name="refreshChckBox">
+            <property name="text">
+             <string>Auto-refresh</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_7">
             <property name="text">
              <string>Current layer:</string>
@@ -287,7 +294,7 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
              <string>Connect</string>
             </property>
             <property name="icon">
-             <iconset>
+             <iconset resource="resource.qrc">
               <normaloff>:/imgs/icons/connect.png</normaloff>:/imgs/icons/connect.png</iconset>
             </property>
             <property name="checkable">
@@ -372,7 +379,7 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
                 <string>Print</string>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="resource.qrc">
                  <normaloff>:/imgs/icons/print.png</normaloff>:/imgs/icons/print.png</iconset>
                </property>
                <property name="checkable">
@@ -392,7 +399,7 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
                 <string>Pause</string>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="resource.qrc">
                  <normaloff>:/imgs/icons/pause.png</normaloff>:/imgs/icons/pause.png</iconset>
                </property>
                <property name="checkable">
@@ -1267,6 +1274,8 @@ background:  qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 #888
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

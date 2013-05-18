@@ -89,7 +89,6 @@ MainWindow::MainWindow(QWidget *parent) :
     foreach (QextPortInfo info, ports) {
         ui->portCombo->addItem(info.portName);
     }
-
     //connecting travel moves checkbox
     connect(ui->showTravelChkBox, SIGNAL(toggled(bool)),ui->glWidget, SLOT(showTravel(bool)));
     //disable steppers btn
@@ -539,7 +538,9 @@ void MainWindow::updateHeadPosition(QVector3D point){
     if(point.z()>this->lastZ && this->printerObj->getIsPrinting()){
         this->lastZ=point.z();
         this->currentLayer++;
-        ui->glWidget->setCurrentLayer(this->currentLayer);
+        if(ui->refreshChckBox->isChecked()){
+            ui->glWidget->setCurrentLayer(this->currentLayer);
+        }
         ui->headControlWidget->resetLayer();
     }
 
@@ -588,6 +589,7 @@ void MainWindow::saveSettings(){
     settings.setValue("mainWindowSize",this->size());
     settings.setValue("baudRateSelected", ui->baudCombo->currentIndex());
     settings.setValue("showConsole", ui->groupBox_2->isChecked());
+    settings.setValue("autoRefresh", ui->refreshChckBox->isChecked());
     settings.setValue("extrudeLenght", ui->extrudeLenghtSpinBox->value());
     settings.setValue("extrudeSpeed", ui->extrudeSpeedSpinBox->value());
     settings.setValue("monitorTemp", ui->graphGroupBox->isChecked());
@@ -661,6 +663,7 @@ void MainWindow::restoreSettings(){
     this->resize(settings.value("mainWindowSize").toSize());
     ui->baudCombo->setCurrentIndex(settings.value("baudRateSelected").toInt());
     ui->groupBox_2->setChecked(settings.value("showConsole").toBool());
+    ui->refreshChckBox->setChecked(settings.value("autoRefresh").toBool());
     ui->extrudeLenghtSpinBox->setValue(settings.value("extrudeLenght").toInt());
     ui->extrudeSpeedSpinBox->setValue(settings.value("extrudeSpeed").toInt());
     ui->graphGroupBox->setChecked(settings.value("monitorTemp").toBool());

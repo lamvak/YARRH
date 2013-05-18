@@ -244,7 +244,7 @@ bool QextSerialEnumeratorPrivate::setUpNotifications_sys(bool setup)
     dbh.dbcc_size = sizeof(dbh);
     dbh.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
     ::CopyMemory(&dbh.dbcc_classguid, &GUID_DEVCLASS_PORTS, sizeof(GUID));
-    if(::RegisterDeviceNotification((HWND)notificationWidget->winId(), &dbh, DEVICE_NOTIFY_WINDOW_HANDLE ) == NULL) {
+    if(::RegisterDeviceNotification((HWND)notificationWidget->winId(), &dbh, DEVICE_NOTIFY_WINDOW_HANDLE) == NULL) {
         QESP_WARNING() << "RegisterDeviceNotification failed:" << GetLastError();
         return false;
     }
