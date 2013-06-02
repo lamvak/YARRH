@@ -90,6 +90,7 @@ macx {
     ICON = icon.icns
 }
 
+LIBS += -lGLU
 OBJECTS_DIR = build
 MOC_DIR = build
 UI_DIR = build
